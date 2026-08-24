@@ -2,17 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmetics Shop POS System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cosmetics POS - Enterprise Edition</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, sans-serif; }
-        .stat-card { border-radius: 12px; color: white; padding: 18px; }
-        .card-cash { background: linear-gradient(135deg, #0d9488, #10b981); }
-        .card-stock { background: linear-gradient(135deg, #d97706, #f59e0b); }
-        .card-sales { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
-        .cart-table { max-height: 280px; overflow-y: auto; }
+        :root { --primary-color: #4f46e5; --dark-bg: #0f172a; }
+        body { background-color: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .navbar-custom { background-color: var(--dark-bg); color: white; }
+        .stat-card { border: none; border-radius: 12px; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .cart-container { max-height: 320px; overflow-y: auto; }
+        .table-custom th { background-color: #f8fafc; color: #475569; font-size: 12px; text-transform: uppercase; }
+        .quick-cash-btn { border-radius: 8px; font-weight: 600; font-size: 12px; }
         @media print {
             body * { visibility: hidden; }
             #receipt-print, #receipt-print * { visibility: visible; }
@@ -22,116 +25,156 @@
 </head>
 <body>
 
+<!-- Top Navigation Bar -->
+<nav class="navbar navbar-expand navbar-dark navbar-custom px-3 py-2 shadow-sm">
+    <div class="container-fluid p-0">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+            <i class="bi bi-shop text-warning"></i>
+            <span>Cosmetics POS Pro</span>
+        </a>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-light btn-sm fw-semibold" onclick="openSalesHistory()"><i class="bi bi-clock-history"></i> Sales Log</button>
+            <button class="btn btn-warning btn-sm fw-bold" onclick="triggerNativeScanner()"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>
+        </div>
+    </div>
+</nav>
+
 <div class="container-fluid py-3 px-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="m-0 text-dark font-weight-bold">💄 Cosmetics Shop POS & Inventory</h4>
-        <button class="btn btn-outline-dark btn-sm" onclick="toggleCameraScanner()">📷 Camera Scanner</button>
+
+    <!-- Camera Scanner Modal View -->
+    <div id="reader-container" class="card p-3 mb-3 d-none shadow">
+        <div id="reader" style="width: 100%; max-width: 400px; margin: auto;"></div>
+        <button class="btn btn-sm btn-danger mt-2 mx-auto" style="width: 150px;" onclick="closeScanner()">Close Scanner</button>
     </div>
 
-    <!-- Camera Scanner -->
-    <div id="reader-container" class="card p-3 mb-3 d-none shadow-sm">
-        <div id="reader" style="width: 100%; max-width: 400px; margin: auto;"></div>
-        <button class="btn btn-sm btn-danger mt-2 mx-auto" style="width: 150px;" onclick="toggleCameraScanner()">Close Camera</button>
-    </div>
-    
-    <!-- Analytics -->
+    <!-- Analytics Dashboard -->
     <div class="row g-2 mb-3">
-        <div class="col-4">
-            <div class="stat-card card-cash shadow-sm">
-                <small class="d-block text-uppercase">Shop Cash</small>
-                <h4 class="m-0" id="analytics-cash">Rs. 0</h4>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-primary">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Register Cash</small>
+                <h5 class="m-0 fw-bold text-dark mt-1" id="analytics-cash">Rs. 0</h5>
             </div>
         </div>
-        <div class="col-4">
-            <div class="stat-card card-stock shadow-sm">
-                <small class="d-block text-uppercase">Stock Value</small>
-                <h4 class="m-0" id="analytics-stock-val">Rs. 0</h4>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-success">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Total Revenue</small>
+                <h5 class="m-0 fw-bold text-dark mt-1" id="analytics-sales">Rs. 0</h5>
             </div>
         </div>
-        <div class="col-4">
-            <div class="stat-card card-sales shadow-sm">
-                <small class="d-block text-uppercase">Total Sales</small>
-                <h4 class="m-0" id="analytics-sales">Rs. 0</h4>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-info">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Net Profit</small>
+                <h5 class="m-0 fw-bold text-success mt-1" id="analytics-profit">Rs. 0</h5>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-warning">
+                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Inventory Valuation</small>
+                <h5 class="m-0 fw-bold text-dark mt-1" id="analytics-stock-val">Rs. 0</h5>
             </div>
         </div>
     </div>
 
     <div class="row g-3">
-        <!-- Billing Area -->
+        <!-- Billing / Checkout Section -->
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between">
-                    <span>🛒 Quick Billing Counter</span>
-                    <small id="analytics-items-count">0 items in stock</small>
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-cart3 me-1 text-primary"></i> Current Sale Counter</h6>
+                    <span class="badge bg-soft-primary text-primary fw-semibold" id="analytics-items-count">0 items in stock</span>
                 </div>
                 <div class="card-body">
                     <div class="input-group mb-3">
-                        <input type="text" id="scan-input" class="form-control form-control-lg" placeholder="Scan Barcode / Barcode ID..." autofocus>
-                        <button class="btn btn-primary" onclick="handleScan()">Add</button>
+                        <span class="input-group-text bg-light"><i class="bi bi-barcode"></i></span>
+                        <input type="text" id="scan-input" class="form-control form-control-lg" placeholder="Scan barcode or type code..." autofocus>
+                        <button class="btn btn-primary px-4 fw-bold" onclick="handleScan()">Add Item</button>
                     </div>
 
-                    <div class="cart-table mb-2">
-                        <table class="table table-sm table-hover align-middle">
-                            <thead class="table-light">
+                    <div class="cart-container mb-3 border rounded-2">
+                        <table class="table table-hover align-middle mb-0 table-custom">
+                            <thead>
                                 <tr>
-                                    <th>Item Name</th>
-                                    <th>Price</th>
-                                    <th>Qty</th>
-                                    <th>Total</th>
-                                    <th>Action</th>
+                                    <th>Product</th>
+                                    <th class="text-center">Price</th>
+                                    <th class="text-center" style="width: 100px;">Qty</th>
+                                    <th class="text-end">Total</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="cart-list"></tbody>
                         </table>
                     </div>
 
-                    <div class="bg-light p-3 rounded-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h5 class="m-0">Total Amount:</h5>
-                            <h3 class="text-success fw-bold m-0" id="cart-total">Rs. 0.00</h3>
+                    <!-- Payment Calculations -->
+                    <div class="bg-light p-3 rounded-3 mb-3 border">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="small fw-semibold text-muted">Discount (Rs.)</label>
+                                <input type="number" id="cart-discount" class="form-control form-control-sm" value="0" oninput="renderCart()">
+                            </div>
+                            <div class="col-6 text-end">
+                                <small class="text-muted d-block fw-semibold">Net Payable Total</small>
+                                <h3 class="text-success fw-bold m-0" id="cart-total">Rs. 0.00</h3>
+                            </div>
                         </div>
-                        <div class="row g-2">
+                        <hr class="my-2">
+                        <div class="row g-2 align-items-center">
                             <div class="col-6">
-                                <input type="number" id="cash-given" class="form-control" placeholder="Cash Received" oninput="calcChange()">
+                                <label class="small fw-semibold text-muted">Cash Tendered</label>
+                                <input type="number" id="cash-given" class="form-control" placeholder="0.00" oninput="calcChange()">
                             </div>
                             <div class="col-6">
-                                <input type="text" id="cash-change" class="form-control fw-bold" placeholder="Change Return" readonly>
+                                <label class="small fw-semibold text-muted">Change Return</label>
+                                <input type="text" id="cash-change" class="form-control fw-bold text-primary" placeholder="Rs. 0.00" readonly>
                             </div>
+                        </div>
+                        <!-- Quick Cash Buttons -->
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash(500)">Rs. 500</button>
+                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash(1000)">Rs. 1000</button>
+                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash(5000)">Rs. 5000</button>
+                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash('exact')">Exact</button>
                         </div>
                     </div>
 
-                    <button class="btn btn-success btn-lg w-100 fw-bold" onclick="completeSale()">Complete Sale & Print Receipt</button>
+                    <button class="btn btn-success btn-lg w-100 fw-bold py-3 shadow-sm" onclick="completeSale()">
+                        <i class="bi bi-printer me-1"></i> Checkout & Print Receipt
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Add Product Form -->
+        <!-- Inventory Management -->
         <div class="col-lg-5">
             <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header bg-primary text-white fw-bold">➕ Add / Edit Product</div>
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-box-seam me-1 text-primary"></i> Product Catalog</h6>
+                </div>
                 <div class="card-body">
                     <form id="product-form" onsubmit="saveProduct(event)">
                         <div class="mb-2">
-                            <input type="text" id="p-barcode" class="form-control form-control-sm" placeholder="Barcode / Product Code" required>
+                            <input type="text" id="p-barcode" class="form-control form-control-sm" placeholder="Barcode / SKU Code" required>
                         </div>
                         <div class="mb-2">
-                            <input type="text" id="p-name" class="form-control form-control-sm" placeholder="Product Name (e.g. Matte Lipstick)" required>
+                            <input type="text" id="p-name" class="form-control form-control-sm" placeholder="Product Title" required>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col"><input type="number" step="0.01" id="p-cost" class="form-control form-control-sm" placeholder="Cost Price" required></div>
-                            <div class="col"><input type="number" step="0.01" id="p-sell" class="form-control form-control-sm" placeholder="Selling Price" required></div>
+                            <div class="col"><input type="number" step="0.01" id="p-sell" class="form-control form-control-sm" placeholder="Sell Price" required></div>
                         </div>
                         <div class="mb-2">
-                            <input type="number" id="p-stock" class="form-control form-control-sm" placeholder="Stock Quantity" required>
+                            <input type="number" id="p-stock" class="form-control form-control-sm" placeholder="Initial Stock Qty" required>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Save Product</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Save To Inventory</button>
                     </form>
                 </div>
             </div>
 
-            <!-- Stock List -->
             <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-secondary text-white fw-bold">📦 Inventory Stock</div>
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark">Stock Levels</h6>
+                    <small class="text-muted">Low stock highlighted</small>
+                </div>
                 <div class="card-body p-0" style="max-height: 220px; overflow-y: auto;">
                     <ul class="list-group list-group-flush" id="inventory-list"></ul>
                 </div>
@@ -140,11 +183,11 @@
     </div>
 </div>
 
-<!-- Thermal Print Template -->
+<!-- Thermal Print Receipt Template -->
 <div id="receipt-print" class="d-none">
     <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px;">
-        <h3 style="margin: 0;">COSMETICS SHOP</h3>
-        <p style="margin: 2px 0;">POS Sales Receipt</p>
+        <h4 style="margin: 0; font-weight: bold;">COSMETICS STORE</h4>
+        <p style="margin: 2px 0;">Sales Receipt</p>
         <small id="rec-date"></small>
     </div>
     <table style="width: 100%; margin-top: 10px; font-size: 11px;">
@@ -158,11 +201,13 @@
         <tbody id="rec-items"></tbody>
     </table>
     <div style="border-top: 1px dashed #000; margin-top: 10px; padding-top: 5px;">
-        <div style="display: flex; justify-content: space-between;"><strong>Total:</strong> <span id="rec-total"></span></div>
-        <div style="display: flex; justify-content: space-between;"><span>Cash Paid:</span> <span id="rec-paid"></span></div>
+        <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span> <span id="rec-subtotal"></span></div>
+        <div style="display: flex; justify-content: space-between;"><span>Discount:</span> <span id="rec-discount"></span></div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold;"><span>Total:</span> <span id="rec-total"></span></div>
+        <div style="display: flex; justify-content: space-between;"><span>Paid:</span> <span id="rec-paid"></span></div>
         <div style="display: flex; justify-content: space-between;"><span>Change:</span> <span id="rec-change"></span></div>
     </div>
-    <p style="text-align: center; margin-top: 15px;">*** Thank You For Shopping! ***</p>
+    <p style="text-align: center; margin-top: 15px; font-size: 10px;">*** Thank You For Shopping! ***</p>
 </div>
 
 <script>
@@ -194,12 +239,25 @@ function loadAnalytics() {
         totalStockItems += parseInt(p.stock);
         totalStockVal += parseInt(p.stock) * parseFloat(p.cost_price);
     });
-    let totalSalesVal = db.sales.reduce((acc, s) => acc + parseFloat(s.total_bill), 0);
 
-    document.getElementById('analytics-cash').innerText = `Rs. ${db.total_cash.toFixed(2)}`;
-    document.getElementById('analytics-stock-val').innerText = `Rs. ${totalStockVal.toFixed(2)}`;
-    document.getElementById('analytics-items-count').innerText = `${totalStockItems} Units in Stock`;
-    document.getElementById('analytics-sales').innerText = `Rs. ${totalSalesVal.toFixed(2)}`;
+    let totalSalesVal = 0;
+    let totalProfitVal = 0;
+
+    db.sales.forEach(s => {
+        totalSalesVal += parseFloat(s.total_bill);
+        if (s.cart) {
+            s.cart.forEach(item => {
+                let cost = db.products[item.barcode] ? db.products[item.barcode].cost_price : 0;
+                totalProfitVal += (item.price - cost) * item.qty;
+            });
+        }
+    });
+
+    document.getElementById('analytics-cash').innerText = `Rs. ${db.total_cash.toLocaleString()}`;
+    document.getElementById('analytics-stock-val').innerText = `Rs. ${totalStockVal.toLocaleString()}`;
+    document.getElementById('analytics-items-count').innerText = `${totalStockItems} items in stock`;
+    document.getElementById('analytics-sales').innerText = `Rs. ${totalSalesVal.toLocaleString()}`;
+    document.getElementById('analytics-profit').innerText = `Rs. ${totalProfitVal.toLocaleString()}`;
 }
 
 function loadInventory() {
@@ -207,14 +265,14 @@ function loadInventory() {
     let list = document.getElementById('inventory-list');
     list.innerHTML = '';
     Object.values(db.products).forEach(p => {
-        let badgeClass = p.stock <= 5 ? 'bg-danger' : 'bg-success';
+        let isLowStock = p.stock <= 5;
         list.innerHTML += `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
                 <div>
-                    <strong>${p.name}</strong> <small class="text-muted">(${p.barcode})</small><br>
-                    <small>Sell: Rs.${p.sell_price} | Cost: Rs.${p.cost_price}</small>
+                    <strong class="d-block text-dark" style="font-size: 13px;">${p.name}</strong>
+                    <small class="text-muted" style="font-size: 11px;">SKU: ${p.barcode} | Sell: Rs.${p.sell_price}</small>
                 </div>
-                <span class="badge ${badgeClass} rounded-pill">${p.stock} Qty</span>
+                <span class="badge ${isLowStock ? 'bg-danger' : 'bg-success'} rounded-pill">${p.stock} units</span>
             </li>`;
     });
 }
@@ -231,7 +289,7 @@ function handleScan(scannedBarcode = null) {
         addToCart(product);
         input.value = '';
     } else {
-        alert('Product barcode not found!');
+        alert('Product code not found in catalog!');
         input.value = '';
     }
 }
@@ -240,7 +298,7 @@ function addToCart(product) {
     let existing = cart.find(item => item.barcode === product.barcode);
     if (existing) {
         if (existing.qty + 1 > product.stock) {
-            alert('Stock limit reached!');
+            alert('Stock limit reached for this item!');
             return;
         }
         existing.qty++;
@@ -250,25 +308,58 @@ function addToCart(product) {
     renderCart();
 }
 
+function updateQty(index, newQty) {
+    let qty = parseInt(newQty);
+    if (qty <= 0) {
+        cart.splice(index, 1);
+    } else {
+        let db = getStoreData();
+        let product = db.products[cart[index].barcode];
+        if (product && qty > product.stock) {
+            alert('Cannot exceed available inventory stock!');
+            return;
+        }
+        cart[index].qty = qty;
+    }
+    renderCart();
+}
+
 function renderCart() {
     let tbody = document.getElementById('cart-list');
     tbody.innerHTML = '';
-    let total = 0;
+    let subtotal = 0;
 
     cart.forEach((item, index) => {
         let itemTotal = item.price * item.qty;
-        total += itemTotal;
+        subtotal += itemTotal;
         tbody.innerHTML += `
             <tr>
-                <td>${item.name}</td>
-                <td>Rs.${item.price}</td>
-                <td>${item.qty}</td>
-                <td>Rs.${itemTotal}</td>
-                <td><button class="btn btn-sm btn-danger py-0 px-2" onclick="removeFromCart(${index})">✕</button></td>
+                <td style="font-size: 13px;" class="fw-semibold">${item.name}</td>
+                <td style="font-size: 13px;" class="text-center">Rs.${item.price}</td>
+                <td class="text-center">
+                    <input type="number" value="${item.qty}" min="1" class="form-control form-control-sm text-center" onchange="updateQty(${index}, this.value)">
+                </td>
+                <td style="font-size: 13px;" class="text-end fw-bold">Rs.${itemTotal}</td>
+                <td class="text-center"><button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${index})"><i class="bi bi-trash"></i></button></td>
             </tr>`;
     });
 
-    document.getElementById('cart-total').innerText = `Rs. ${total.toFixed(2)}`;
+    let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
+    let netTotal = Math.max(0, subtotal - discount);
+
+    document.getElementById('cart-total').innerText = `Rs. ${netTotal.toFixed(2)}`;
+    calcChange();
+}
+
+function setQuickCash(amount) {
+    let totalText = document.getElementById('cart-total').innerText.replace('Rs. ', '');
+    let total = parseFloat(totalText) || 0;
+    
+    if (amount === 'exact') {
+        document.getElementById('cash-given').value = total;
+    } else {
+        document.getElementById('cash-given').value = amount;
+    }
     calcChange();
 }
 
@@ -281,13 +372,14 @@ function calcChange() {
     let total = parseFloat(document.getElementById('cart-total').innerText.replace('Rs. ', '')) || 0;
     let given = parseFloat(document.getElementById('cash-given').value) || 0;
     let change = given - total;
-    document.getElementById('cash-change').value = change >= 0 ? `Rs. ${change.toFixed(2)}` : 'Insufficient Cash';
+    document.getElementById('cash-change').value = change >= 0 ? `Rs. ${change.toFixed(2)}` : 'Short Cash';
 }
 
 function completeSale() {
     if (cart.length === 0) return alert('Cart is empty!');
     let given = parseFloat(document.getElementById('cash-given').value) || 0;
     let total = parseFloat(document.getElementById('cart-total').innerText.replace('Rs. ', ''));
+    let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
 
     if (given < total) return alert('Cash received is less than total bill!');
 
@@ -300,7 +392,7 @@ function completeSale() {
 
     let changeGiven = given - total;
     db.total_cash += total;
-    let saleRecord = { cart: cart, total_bill: total, payment_received: given, change_given: changeGiven };
+    let saleRecord = { cart: cart, discount: discount, total_bill: total, payment_received: given, change_given: changeGiven, timestamp: new Date().toLocaleString() };
     db.sales.push(saleRecord);
 
     saveStoreData(db);
@@ -308,30 +400,43 @@ function completeSale() {
 
     cart = [];
     document.getElementById('cash-given').value = '';
+    document.getElementById('cart-discount').value = '0';
     renderCart();
     loadAnalytics();
     loadInventory();
 }
 
 function printReceipt(saleData) {
-    document.getElementById('rec-date').innerText = new Date().toLocaleString();
+    document.getElementById('rec-date').innerText = saleData.timestamp;
     let recItems = document.getElementById('rec-items');
     recItems.innerHTML = '';
+    let subtotal = 0;
+    
     saleData.cart.forEach(item => {
+        let itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
         recItems.innerHTML += `
             <tr>
                 <td>${item.name}</td>
                 <td style="text-align: center;">${item.qty}</td>
-                <td style="text-align: right;">Rs.${(item.price * item.qty).toFixed(2)}</td>
+                <td style="text-align: right;">Rs.${itemTotal.toFixed(2)}</td>
             </tr>`;
     });
+    
+    document.getElementById('rec-subtotal').innerText = `Rs. ${subtotal.toFixed(2)}`;
+    document.getElementById('rec-discount').innerText = `Rs. ${saleData.discount.toFixed(2)}`;
     document.getElementById('rec-total').innerText = `Rs. ${saleData.total_bill.toFixed(2)}`;
     document.getElementById('rec-paid').innerText = `Rs. ${saleData.payment_received.toFixed(2)}`;
     document.getElementById('rec-change').innerText = `Rs. ${saleData.change_given.toFixed(2)}`;
 
     let printArea = document.getElementById('receipt-print');
     printArea.classList.remove('d-none');
-    window.print();
+    
+    if (window.median && window.median.print) {
+        window.median.print.page();
+    } else {
+        window.print();
+    }
     printArea.classList.add('d-none');
 }
 
@@ -352,22 +457,43 @@ function saveProduct(e) {
     document.getElementById('product-form').reset();
     loadInventory();
     loadAnalytics();
-    alert('Product saved successfully!');
+    alert('Product details updated in database!');
+}
+
+function triggerNativeScanner() {
+    if (window.median && window.median.barcode) {
+        window.median.barcode.scan({
+            callback: function(data) {
+                if (data && data.scanResult) handleScan(data.scanResult);
+            }
+        });
+    } else {
+        toggleCameraScanner();
+    }
 }
 
 function toggleCameraScanner() {
     let container = document.getElementById('reader-container');
     if (container.classList.contains('d-none')) {
         container.classList.remove('d-none');
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
         html5QrcodeScanner.render((decodedText) => {
             handleScan(decodedText);
-            toggleCameraScanner();
+            closeScanner();
         });
     } else {
-        if (html5QrcodeScanner) html5QrcodeScanner.clear();
-        container.classList.add('d-none');
+        closeScanner();
     }
+}
+
+function closeScanner() {
+    if (html5QrcodeScanner) html5QrcodeScanner.clear();
+    document.getElementById('reader-container').classList.add('d-none');
+}
+
+function openSalesHistory() {
+    let db = getStoreData();
+    alert(`Total Sales Executed: ${db.sales.length}\nTotal Registered Revenue: Rs. ${db.total_cash}`);
 }
 </script>
 </body>
