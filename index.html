@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cosmetics POS - Enterprise Edition</title>
+    <title>Cosmetics POS - Vyapar Suite</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
-        :root { --primary-color: #4f46e5; --dark-bg: #0f172a; }
-        body { background-color: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        .navbar-custom { background-color: var(--dark-bg); color: white; }
-        .stat-card { border: none; border-radius: 12px; transition: transform 0.2s; }
-        .stat-card:hover { transform: translateY(-2px); }
-        .cart-container { max-height: 320px; overflow-y: auto; }
-        .table-custom th { background-color: #f8fafc; color: #475569; font-size: 12px; text-transform: uppercase; }
-        .quick-cash-btn { border-radius: 8px; font-weight: 600; font-size: 12px; }
+        :root { --vyapar-blue: #1d4ed8; --vyapar-light: #eff6ff; }
+        body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding-bottom: 70px; }
+        .top-nav { background: white; border-bottom: 1px solid #e2e8f0; }
+        .menu-header { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .menu-item { background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .menu-item:hover { background-color: #f8fafc; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; height: 60px; z-index: 1000; }
+        .nav-btn { color: #64748b; font-size: 11px; text-decoration: none; text-align: center; flex: 1; }
+        .nav-btn.active { color: var(--vyapar-blue); font-weight: 600; }
+        .cart-box { max-height: 220px; overflow-y: auto; }
         @media print {
             body * { visibility: hidden; }
             #receipt-print, #receipt-print * { visibility: visible; }
@@ -25,168 +27,223 @@
 </head>
 <body>
 
-<!-- Top Navigation Bar -->
-<nav class="navbar navbar-expand navbar-dark navbar-custom px-3 py-2 shadow-sm">
-    <div class="container-fluid p-0">
-        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
-            <i class="bi bi-shop text-warning"></i>
-            <span>Cosmetics POS Pro</span>
-        </a>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-light btn-sm fw-semibold" onclick="openSalesHistory()"><i class="bi bi-clock-history"></i> Sales Log</button>
-            <button class="btn btn-warning btn-sm fw-bold" onclick="triggerNativeScanner()"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>
-        </div>
+<!-- Header -->
+<div class="top-nav px-3 py-2 d-flex align-items-center justify-content-between shadow-sm sticky-top">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-shop text-primary fs-4"></i>
+        <h6 class="m-0 fw-bold text-dark">Cosmetics POS</h6>
     </div>
-</nav>
+    <button class="btn btn-primary btn-sm fw-bold rounded-pill px-3" onclick="triggerScan('sale')">
+        <i class="bi bi-qr-code-scan me-1"></i> Quick Scan
+    </button>
+</div>
 
 <div class="container-fluid py-3 px-3">
 
-    <!-- Camera Scanner Modal View -->
-    <div id="reader-container" class="card p-3 mb-3 d-none shadow">
-        <div id="reader" style="width: 100%; max-width: 400px; margin: auto;"></div>
-        <button class="btn btn-sm btn-danger mt-2 mx-auto" style="width: 150px;" onclick="closeScanner()">Close Scanner</button>
+    <!-- Universal Camera Modal -->
+    <div id="scanner-modal" class="card p-3 mb-3 d-none shadow">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark" id="scanner-title">Scan Barcode</span>
+            <button class="btn-close" onclick="closeScanner()"></button>
+        </div>
+        <div id="reader" style="width: 100%; max-width: 380px; margin: auto;"></div>
     </div>
 
-    <!-- Analytics Dashboard -->
-    <div class="row g-2 mb-3">
-        <div class="col-6 col-md-3">
-            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-primary">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Register Cash</small>
-                <h5 class="m-0 fw-bold text-dark mt-1" id="analytics-cash">Rs. 0</h5>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-success">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Total Revenue</small>
-                <h5 class="m-0 fw-bold text-dark mt-1" id="analytics-sales">Rs. 0</h5>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-info">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Net Profit</small>
-                <h5 class="m-0 fw-bold text-success mt-1" id="analytics-profit">Rs. 0</h5>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card bg-white shadow-sm p-3 border-start border-4 border-warning">
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Inventory Valuation</small>
-                <h5 class="m-0 fw-bold text-dark mt-1" id="analytics-stock-val">Rs. 0</h5>
-            </div>
-        </div>
-    </div>
+    <!-- MAIN APP TABS -->
 
-    <div class="row g-3">
-        <!-- Billing / Checkout Section -->
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-cart3 me-1 text-primary"></i> Current Sale Counter</h6>
-                    <span class="badge bg-soft-primary text-primary fw-semibold" id="analytics-items-count">0 items in stock</span>
+    <!-- TAB 1: POS BILLING COUNTER -->
+    <div id="view-pos" class="app-view">
+        <div class="card border-0 shadow-sm rounded-3 mb-3">
+            <div class="card-body p-3">
+                <div class="input-group mb-2">
+                    <input type="text" id="scan-input" class="form-control" placeholder="Scan or enter item barcode...">
+                    <button class="btn btn-primary fw-bold" onclick="handleSaleScan()">Add</button>
                 </div>
-                <div class="card-body">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text bg-light"><i class="bi bi-barcode"></i></span>
-                        <input type="text" id="scan-input" class="form-control form-control-lg" placeholder="Scan barcode or type code..." autofocus>
-                        <button class="btn btn-primary px-4 fw-bold" onclick="handleScan()">Add Item</button>
-                    </div>
+                
+                <div class="cart-box border rounded-2 mb-3">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th>Price</th>
+                                <th style="width: 60px;">Qty</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-list"></tbody>
+                    </table>
+                </div>
 
-                    <div class="cart-container mb-3 border rounded-2">
-                        <table class="table table-hover align-middle mb-0 table-custom">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th class="text-center">Price</th>
-                                    <th class="text-center" style="width: 100px;">Qty</th>
-                                    <th class="text-end">Total</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="cart-list"></tbody>
-                        </table>
+                <div class="bg-light p-3 rounded-3 mb-3 border">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-bold">Total Bill:</span>
+                        <h4 class="text-success fw-bold m-0" id="cart-total">Rs. 0.00</h4>
                     </div>
-
-                    <!-- Payment Calculations -->
-                    <div class="bg-light p-3 rounded-3 mb-3 border">
-                        <div class="row g-2 mb-2">
-                            <div class="col-6">
-                                <label class="small fw-semibold text-muted">Discount (Rs.)</label>
-                                <input type="number" id="cart-discount" class="form-control form-control-sm" value="0" oninput="renderCart()">
-                            </div>
-                            <div class="col-6 text-end">
-                                <small class="text-muted d-block fw-semibold">Net Payable Total</small>
-                                <h3 class="text-success fw-bold m-0" id="cart-total">Rs. 0.00</h3>
-                            </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="number" id="cash-given" class="form-control form-control-sm" placeholder="Cash Received" oninput="calcChange()">
                         </div>
-                        <hr class="my-2">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-6">
-                                <label class="small fw-semibold text-muted">Cash Tendered</label>
-                                <input type="number" id="cash-given" class="form-control" placeholder="0.00" oninput="calcChange()">
-                            </div>
-                            <div class="col-6">
-                                <label class="small fw-semibold text-muted">Change Return</label>
-                                <input type="text" id="cash-change" class="form-control fw-bold text-primary" placeholder="Rs. 0.00" readonly>
-                            </div>
-                        </div>
-                        <!-- Quick Cash Buttons -->
-                        <div class="d-flex gap-2 mt-2">
-                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash(500)">Rs. 500</button>
-                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash(1000)">Rs. 1000</button>
-                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash(5000)">Rs. 5000</button>
-                            <button class="btn btn-outline-secondary btn-sm flex-fill quick-cash-btn" onclick="setQuickCash('exact')">Exact</button>
+                        <div class="col-6">
+                            <input type="text" id="cash-change" class="form-control form-control-sm fw-bold" placeholder="Change Return" readonly>
                         </div>
                     </div>
+                </div>
 
-                    <button class="btn btn-success btn-lg w-100 fw-bold py-3 shadow-sm" onclick="completeSale()">
-                        <i class="bi bi-printer me-1"></i> Checkout & Print Receipt
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inventory Management -->
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                <div class="card-header bg-white py-3">
-                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-box-seam me-1 text-primary"></i> Product Catalog</h6>
-                </div>
-                <div class="card-body">
-                    <form id="product-form" onsubmit="saveProduct(event)">
-                        <div class="mb-2">
-                            <input type="text" id="p-barcode" class="form-control form-control-sm" placeholder="Barcode / SKU Code" required>
-                        </div>
-                        <div class="mb-2">
-                            <input type="text" id="p-name" class="form-control form-control-sm" placeholder="Product Title" required>
-                        </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col"><input type="number" step="0.01" id="p-cost" class="form-control form-control-sm" placeholder="Cost Price" required></div>
-                            <div class="col"><input type="number" step="0.01" id="p-sell" class="form-control form-control-sm" placeholder="Sell Price" required></div>
-                        </div>
-                        <div class="mb-2">
-                            <input type="number" id="p-stock" class="form-control form-control-sm" placeholder="Initial Stock Qty" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Save To Inventory</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-dark">Stock Levels</h6>
-                    <small class="text-muted">Low stock highlighted</small>
-                </div>
-                <div class="card-body p-0" style="max-height: 220px; overflow-y: auto;">
-                    <ul class="list-group list-group-flush" id="inventory-list"></ul>
-                </div>
+                <button class="btn btn-success btn-lg w-100 fw-bold shadow-sm" onclick="completeSale()">
+                    <i class="bi bi-printer me-1"></i> Complete Sale & Receipt
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- TAB 2: MENU & NAVIGATION (VYAPAR STYLE) -->
+    <div id="view-menu" class="app-view d-none">
+        <!-- Sales Section -->
+        <div class="menu-header mb-1">My Business - Sales</div>
+        <div class="menu-item p-3" onclick="switchTab('pos')">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-receipt text-primary fs-5"></i>
+                    <div>
+                        <strong class="d-block text-dark" style="font-size: 14px;">Mobile POS / Billing</strong>
+                        <small class="text-muted" style="font-size: 11px;">Quick counter sales billing</small>
+                    </div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+            </div>
+        </div>
+
+        <div class="menu-item p-3" onclick="openSalesLog()">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-journal-text text-info fs-5"></i>
+                    <div>
+                        <strong class="d-block text-dark" style="font-size: 14px;">Sale Invoices Log</strong>
+                        <small class="text-muted" style="font-size: 11px;">View completed sales history</small>
+                    </div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+            </div>
+        </div>
+
+        <!-- Purchase & Stock Section -->
+        <div class="menu-header mt-3 mb-1">Purchase & Inventory</div>
+        <div class="menu-item p-3" onclick="switchTab('items')">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-box-seam text-warning fs-5"></i>
+                    <div>
+                        <strong class="d-block text-dark" style="font-size: 14px;">Add New Stock (Scan Barcode)</strong>
+                        <small class="text-muted" style="font-size: 11px;">Register products into inventory</small>
+                    </div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+            </div>
+        </div>
+
+        <!-- Cash & Bank Section -->
+        <div class="menu-header mt-3 mb-1">Cash & Bank Accounts</div>
+        <div class="menu-item p-3" onclick="showCashRegister()">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-wallet2 text-success fs-5"></i>
+                    <div>
+                        <strong class="d-block text-dark" style="font-size: 14px;">Cash In-Hand Register</strong>
+                        <small class="text-muted" style="font-size: 11px;">Track daily drawer cash balance</small>
+                    </div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: ADD INVENTORY / ITEM CATALOG -->
+    <div id="view-items" class="app-view d-none">
+        <div class="card border-0 shadow-sm rounded-3 mb-3">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 fw-bold text-dark"><i class="bi bi-plus-circle text-primary me-1"></i> Add Product Stock</h6>
+            </div>
+            <div class="card-body">
+                <form id="product-form" onsubmit="saveProduct(event)">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">Barcode Code</label>
+                        <div class="input-group">
+                            <input type="text" id="p-barcode" class="form-control form-control-sm" placeholder="Scan or enter code" required>
+                            <button class="btn btn-outline-primary btn-sm fw-bold" type="button" onclick="triggerScan('add_product')">
+                                <i class="bi bi-camera me-1"></i> Scan to Add Product
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">Product Title</label>
+                        <input type="text" id="p-name" class="form-control form-control-sm" placeholder="e.g. Lip Gloss Pink" required>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col">
+                            <label class="form-label small fw-semibold text-muted mb-1">Cost Price</label>
+                            <input type="number" step="0.01" id="p-cost" class="form-control form-control-sm" placeholder="0.00" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label small fw-semibold text-muted mb-1">Sell Price</label>
+                            <input type="number" step="0.01" id="p-sell" class="form-control form-control-sm" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-muted mb-1">Stock Quantity</label>
+                        <input type="number" id="p-stock" class="form-control form-control-sm" placeholder="Units available" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold py-2">Save Product to Inventory</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-2">
+                <h6 class="m-0 fw-bold text-dark" style="font-size: 13px;">Registered Inventory Stock</h6>
+            </div>
+            <div class="card-body p-0" style="max-height: 250px; overflow-y: auto;">
+                <ul class="list-group list-group-flush" id="inventory-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: DASHBOARD ANALYTICS -->
+    <div id="view-dashboard" class="app-view d-none">
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="card bg-white p-3 border-0 shadow-sm rounded-3">
+                    <small class="text-muted fw-bold" style="font-size: 10px;">SHOP CASH BALANCE</small>
+                    <h5 class="m-0 fw-bold text-primary mt-1" id="analytics-cash">Rs. 0</h5>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card bg-white p-3 border-0 shadow-sm rounded-3">
+                    <small class="text-muted fw-bold" style="font-size: 10px;">TOTAL REVENUE</small>
+                    <h5 class="m-0 fw-bold text-success mt-1" id="analytics-sales">Rs. 0</h5>
+                </div>
+            </div>
+            <div class="col-6 mt-2">
+                <div class="card bg-white p-3 border-0 shadow-sm rounded-3">
+                    <small class="text-muted fw-bold" style="font-size: 10px;">STOCK VALUATION</small>
+                    <h5 class="m-0 fw-bold text-dark mt-1" id="analytics-stock-val">Rs. 0</h5>
+                </div>
+            </div>
+            <div class="col-6 mt-2">
+                <div class="card bg-white p-3 border-0 shadow-sm rounded-3">
+                    <small class="text-muted fw-bold" style="font-size: 10px;">TOTAL PROFIT</small>
+                    <h5 class="m-0 fw-bold text-info mt-1" id="analytics-profit">Rs. 0</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- Thermal Print Receipt Template -->
+<!-- Thermal Print Template -->
 <div id="receipt-print" class="d-none">
     <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px;">
-        <h4 style="margin: 0; font-weight: bold;">COSMETICS STORE</h4>
+        <h4 style="margin: 0;">COSMETICS SHOP</h4>
         <p style="margin: 2px 0;">Sales Receipt</p>
         <small id="rec-date"></small>
     </div>
@@ -201,18 +258,33 @@
         <tbody id="rec-items"></tbody>
     </table>
     <div style="border-top: 1px dashed #000; margin-top: 10px; padding-top: 5px;">
-        <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span> <span id="rec-subtotal"></span></div>
-        <div style="display: flex; justify-content: space-between;"><span>Discount:</span> <span id="rec-discount"></span></div>
         <div style="display: flex; justify-content: space-between; font-weight: bold;"><span>Total:</span> <span id="rec-total"></span></div>
         <div style="display: flex; justify-content: space-between;"><span>Paid:</span> <span id="rec-paid"></span></div>
         <div style="display: flex; justify-content: space-between;"><span>Change:</span> <span id="rec-change"></span></div>
     </div>
-    <p style="text-align: center; margin-top: 15px; font-size: 10px;">*** Thank You For Shopping! ***</p>
+    <p style="text-align: center; margin-top: 15px; font-size: 10px;">*** Thank You! ***</p>
+</div>
+
+<!-- Vyapar Style Bottom Navigation Bar -->
+<div class="bottom-nav d-flex align-items-center justify-content-around">
+    <a href="#" class="nav-btn active" id="btn-tab-pos" onclick="switchTab('pos')">
+        <i class="bi bi-cart3 d-block fs-5"></i> POS
+    </a>
+    <a href="#" class="nav-btn" id="btn-tab-dashboard" onclick="switchTab('dashboard')">
+        <i class="bi bi-bar-chart-line d-block fs-5"></i> Dashboard
+    </a>
+    <a href="#" class="nav-btn" id="btn-tab-items" onclick="switchTab('items')">
+        <i class="bi bi-box-seam d-block fs-5"></i> Items
+    </a>
+    <a href="#" class="nav-btn" id="btn-tab-menu" onclick="switchTab('menu')">
+        <i class="bi bi-list d-block fs-5"></i> Menu
+    </a>
 </div>
 
 <script>
 let cart = [];
 let html5QrcodeScanner = null;
+let scanTargetMode = 'sale'; // 'sale' or 'add_product'
 
 function getStoreData() {
     let data = localStorage.getItem('cosmetics_pos_db');
@@ -227,57 +299,60 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAnalytics();
     loadInventory();
     document.getElementById('scan-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleScan();
+        if (e.key === 'Enter') handleSaleScan();
     });
 });
 
-function loadAnalytics() {
-    let db = getStoreData();
-    let totalStockItems = 0;
-    let totalStockVal = 0;
-    Object.values(db.products).forEach(p => {
-        totalStockItems += parseInt(p.stock);
-        totalStockVal += parseInt(p.stock) * parseFloat(p.cost_price);
-    });
+function switchTab(tabName) {
+    document.querySelectorAll('.app-view').forEach(v => v.classList.add('d-none'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-    let totalSalesVal = 0;
-    let totalProfitVal = 0;
-
-    db.sales.forEach(s => {
-        totalSalesVal += parseFloat(s.total_bill);
-        if (s.cart) {
-            s.cart.forEach(item => {
-                let cost = db.products[item.barcode] ? db.products[item.barcode].cost_price : 0;
-                totalProfitVal += (item.price - cost) * item.qty;
-            });
-        }
-    });
-
-    document.getElementById('analytics-cash').innerText = `Rs. ${db.total_cash.toLocaleString()}`;
-    document.getElementById('analytics-stock-val').innerText = `Rs. ${totalStockVal.toLocaleString()}`;
-    document.getElementById('analytics-items-count').innerText = `${totalStockItems} items in stock`;
-    document.getElementById('analytics-sales').innerText = `Rs. ${totalSalesVal.toLocaleString()}`;
-    document.getElementById('analytics-profit').innerText = `Rs. ${totalProfitVal.toLocaleString()}`;
+    document.getElementById(`view-${tabName}`).classList.remove('d-none');
+    let activeBtn = document.getElementById(`btn-tab-${tabName}`);
+    if (activeBtn) activeBtn.classList.add('active');
 }
 
-function loadInventory() {
-    let db = getStoreData();
-    let list = document.getElementById('inventory-list');
-    list.innerHTML = '';
-    Object.values(db.products).forEach(p => {
-        let isLowStock = p.stock <= 5;
-        list.innerHTML += `
-            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                <div>
-                    <strong class="d-block text-dark" style="font-size: 13px;">${p.name}</strong>
-                    <small class="text-muted" style="font-size: 11px;">SKU: ${p.barcode} | Sell: Rs.${p.sell_price}</small>
-                </div>
-                <span class="badge ${isLowStock ? 'bg-danger' : 'bg-success'} rounded-pill">${p.stock} units</span>
-            </li>`;
+function triggerScan(targetMode) {
+    scanTargetMode = targetMode;
+    document.getElementById('scanner-title').innerText = targetMode === 'add_product' ? 'Scan Product Barcode to Add' : 'Scan Item for Billing';
+    
+    if (window.median && window.median.barcode) {
+        window.median.barcode.scan({
+            callback: function(data) {
+                if (data && data.scanResult) processScannedCode(data.scanResult);
+            }
+        });
+    } else {
+        openWebScanner();
+    }
+}
+
+function openWebScanner() {
+    let container = document.getElementById('scanner-modal');
+    container.classList.remove('d-none');
+    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 240 });
+    html5QrcodeScanner.render((decodedText) => {
+        processScannedCode(decodedText);
+        closeScanner();
     });
 }
 
-function handleScan(scannedBarcode = null) {
+function closeScanner() {
+    if (html5QrcodeScanner) html5QrcodeScanner.clear();
+    document.getElementById('scanner-modal').classList.add('d-none');
+}
+
+function processScannedCode(barcode) {
+    if (scanTargetMode === 'add_product') {
+        switchTab('items');
+        document.getElementById('p-barcode').value = barcode;
+        document.getElementById('p-name').focus();
+    } else {
+        handleSaleScan(barcode);
+    }
+}
+
+function handleSaleScan(scannedBarcode = null) {
     let input = document.getElementById('scan-input');
     let barcode = scannedBarcode || input.value.trim();
     if (!barcode) return;
@@ -289,7 +364,7 @@ function handleScan(scannedBarcode = null) {
         addToCart(product);
         input.value = '';
     } else {
-        alert('Product code not found in catalog!');
+        alert('Product not found in stock catalog!');
         input.value = '';
     }
 }
@@ -298,7 +373,7 @@ function addToCart(product) {
     let existing = cart.find(item => item.barcode === product.barcode);
     if (existing) {
         if (existing.qty + 1 > product.stock) {
-            alert('Stock limit reached for this item!');
+            alert('Stock limit reached!');
             return;
         }
         existing.qty++;
@@ -308,58 +383,25 @@ function addToCart(product) {
     renderCart();
 }
 
-function updateQty(index, newQty) {
-    let qty = parseInt(newQty);
-    if (qty <= 0) {
-        cart.splice(index, 1);
-    } else {
-        let db = getStoreData();
-        let product = db.products[cart[index].barcode];
-        if (product && qty > product.stock) {
-            alert('Cannot exceed available inventory stock!');
-            return;
-        }
-        cart[index].qty = qty;
-    }
-    renderCart();
-}
-
 function renderCart() {
     let tbody = document.getElementById('cart-list');
     tbody.innerHTML = '';
-    let subtotal = 0;
+    let total = 0;
 
     cart.forEach((item, index) => {
         let itemTotal = item.price * item.qty;
-        subtotal += itemTotal;
+        total += itemTotal;
         tbody.innerHTML += `
             <tr>
-                <td style="font-size: 13px;" class="fw-semibold">${item.name}</td>
-                <td style="font-size: 13px;" class="text-center">Rs.${item.price}</td>
-                <td class="text-center">
-                    <input type="number" value="${item.qty}" min="1" class="form-control form-control-sm text-center" onchange="updateQty(${index}, this.value)">
-                </td>
-                <td style="font-size: 13px;" class="text-end fw-bold">Rs.${itemTotal}</td>
-                <td class="text-center"><button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${index})"><i class="bi bi-trash"></i></button></td>
+                <td style="font-size: 12px;" class="fw-semibold">${item.name}</td>
+                <td style="font-size: 12px;">Rs.${item.price}</td>
+                <td style="font-size: 12px;">${item.qty}</td>
+                <td style="font-size: 12px;" class="fw-bold">Rs.${itemTotal}</td>
+                <td><button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${index})"><i class="bi bi-trash"></i></button></td>
             </tr>`;
     });
 
-    let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
-    let netTotal = Math.max(0, subtotal - discount);
-
-    document.getElementById('cart-total').innerText = `Rs. ${netTotal.toFixed(2)}`;
-    calcChange();
-}
-
-function setQuickCash(amount) {
-    let totalText = document.getElementById('cart-total').innerText.replace('Rs. ', '');
-    let total = parseFloat(totalText) || 0;
-    
-    if (amount === 'exact') {
-        document.getElementById('cash-given').value = total;
-    } else {
-        document.getElementById('cash-given').value = amount;
-    }
+    document.getElementById('cart-total').innerText = `Rs. ${total.toFixed(2)}`;
     calcChange();
 }
 
@@ -372,14 +414,13 @@ function calcChange() {
     let total = parseFloat(document.getElementById('cart-total').innerText.replace('Rs. ', '')) || 0;
     let given = parseFloat(document.getElementById('cash-given').value) || 0;
     let change = given - total;
-    document.getElementById('cash-change').value = change >= 0 ? `Rs. ${change.toFixed(2)}` : 'Short Cash';
+    document.getElementById('cash-change').value = change >= 0 ? `Rs. ${change.toFixed(2)}` : 'Short';
 }
 
 function completeSale() {
     if (cart.length === 0) return alert('Cart is empty!');
     let given = parseFloat(document.getElementById('cash-given').value) || 0;
     let total = parseFloat(document.getElementById('cart-total').innerText.replace('Rs. ', ''));
-    let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
 
     if (given < total) return alert('Cash received is less than total bill!');
 
@@ -392,7 +433,7 @@ function completeSale() {
 
     let changeGiven = given - total;
     db.total_cash += total;
-    let saleRecord = { cart: cart, discount: discount, total_bill: total, payment_received: given, change_given: changeGiven, timestamp: new Date().toLocaleString() };
+    let saleRecord = { cart: cart, total_bill: total, payment_received: given, change_given: changeGiven, timestamp: new Date().toLocaleString() };
     db.sales.push(saleRecord);
 
     saveStoreData(db);
@@ -400,7 +441,6 @@ function completeSale() {
 
     cart = [];
     document.getElementById('cash-given').value = '';
-    document.getElementById('cart-discount').value = '0';
     renderCart();
     loadAnalytics();
     loadInventory();
@@ -410,21 +450,16 @@ function printReceipt(saleData) {
     document.getElementById('rec-date').innerText = saleData.timestamp;
     let recItems = document.getElementById('rec-items');
     recItems.innerHTML = '';
-    let subtotal = 0;
     
     saleData.cart.forEach(item => {
-        let itemTotal = item.price * item.qty;
-        subtotal += itemTotal;
         recItems.innerHTML += `
             <tr>
                 <td>${item.name}</td>
                 <td style="text-align: center;">${item.qty}</td>
-                <td style="text-align: right;">Rs.${itemTotal.toFixed(2)}</td>
+                <td style="text-align: right;">Rs.${(item.price * item.qty).toFixed(2)}</td>
             </tr>`;
     });
     
-    document.getElementById('rec-subtotal').innerText = `Rs. ${subtotal.toFixed(2)}`;
-    document.getElementById('rec-discount').innerText = `Rs. ${saleData.discount.toFixed(2)}`;
     document.getElementById('rec-total').innerText = `Rs. ${saleData.total_bill.toFixed(2)}`;
     document.getElementById('rec-paid').innerText = `Rs. ${saleData.payment_received.toFixed(2)}`;
     document.getElementById('rec-change').innerText = `Rs. ${saleData.change_given.toFixed(2)}`;
@@ -457,43 +492,61 @@ function saveProduct(e) {
     document.getElementById('product-form').reset();
     loadInventory();
     loadAnalytics();
-    alert('Product details updated in database!');
+    alert('Product successfully added to inventory!');
 }
 
-function triggerNativeScanner() {
-    if (window.median && window.median.barcode) {
-        window.median.barcode.scan({
-            callback: function(data) {
-                if (data && data.scanResult) handleScan(data.scanResult);
-            }
-        });
-    } else {
-        toggleCameraScanner();
-    }
-}
-
-function toggleCameraScanner() {
-    let container = document.getElementById('reader-container');
-    if (container.classList.contains('d-none')) {
-        container.classList.remove('d-none');
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
-        html5QrcodeScanner.render((decodedText) => {
-            handleScan(decodedText);
-            closeScanner();
-        });
-    } else {
-        closeScanner();
-    }
-}
-
-function closeScanner() {
-    if (html5QrcodeScanner) html5QrcodeScanner.clear();
-    document.getElementById('reader-container').classList.add('d-none');
-}
-
-function openSalesHistory() {
+function loadAnalytics() {
     let db = getStoreData();
-    alert(`Total Sales Executed: ${db.sales.length}\nTotal Registered Revenue: Rs. ${db.total_cash}`);
+    let totalStockItems = 0;
+    let totalStockVal = 0;
+    Object.values(db.products).forEach(p => {
+        totalStockItems += parseInt(p.stock);
+        totalStockVal += parseInt(p.stock) * parseFloat(p.cost_price);
+    });
+
+    let totalSalesVal = 0;
+    let totalProfitVal = 0;
+
+    db.sales.forEach(s => {
+        totalSalesVal += parseFloat(s.total_bill);
+        if (s.cart) {
+            s.cart.forEach(item => {
+                let cost = db.products[item.barcode] ? db.products[item.barcode].cost_price : 0;
+                totalProfitVal += (item.price - cost) * item.qty;
+            });
+        }
+    });
+
+    document.getElementById('analytics-cash').innerText = `Rs. ${db.total_cash.toLocaleString()}`;
+    document.getElementById('analytics-stock-val').innerText = `Rs. ${totalStockVal.toLocaleString()}`;
+    document.getElementById('analytics-sales').innerText = `Rs. ${totalSalesVal.toLocaleString()}`;
+    document.getElementById('analytics-profit').innerText = `Rs. ${totalProfitVal.toLocaleString()}`;
+}
+
+function loadInventory() {
+    let db = getStoreData();
+    let list = document.getElementById('inventory-list');
+    list.innerHTML = '';
+    Object.values(db.products).forEach(p => {
+        list.innerHTML += `
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                <div>
+                    <strong class="d-block text-dark" style="font-size: 13px;">${p.name}</strong>
+                    <small class="text-muted" style="font-size: 11px;">Code: ${p.barcode} | Sell: Rs.${p.sell_price}</small>
+                </div>
+                <span class="badge bg-primary rounded-pill">${p.stock} units</span>
+            </li>`;
+    });
+}
+
+function openSalesLog() {
+    let db = getStoreData();
+    alert(`Total Sales: ${db.sales.length}\nRegister Cash: Rs. ${db.total_cash}`);
+}
+
+function showCashRegister() {
+    let db = getStoreData();
+    alert(`Current Cash In-Hand: Rs. ${db.total_cash}`);
 }
 </script>
 </body>
