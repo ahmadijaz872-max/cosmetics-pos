@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmetics Shop POS System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .stat-card { border-radius: 12px; color: white; padding: 18px; }
+        .card-cash { background: linear-gradient(135deg, #0d9488, #10b981); }
+        .card-stock { background: linear-gradient(135deg, #d97706, #f59e0b); }
+        .card-sales { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+        .cart-table { max-height: 280px; overflow-y: auto; }
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-print, #receipt-print * { visibility: visible; }
+            #receipt-print { position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid py-3 px-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0 text-dark font-weight-bold">💄 Cosmetics Shop POS & Inventory</h4>
+        <button class="btn btn-outline-dark btn-sm" onclick="toggleCameraScanner()">📷 Camera Scanner</button>
+    </div>
+
+    <!-- Camera Scanner -->
+    <div id="reader-container" class="card p-3 mb-3 d-none shadow-sm">
+        <div id="reader" style="width: 100%; max-width: 400px; margin: auto;"></div>
+        <button class="btn btn-sm btn-danger mt-2 mx-auto" style="width: 150px;" onclick="toggleCameraScanner()">Close Camera</button>
+    </div>
+    
+    <!-- Analytics -->
+    <div class="row g-2 mb-3">
+        <div class="col-4">
+            <div class="stat-card card-cash shadow-sm">
+                <small class="d-block text-uppercase">Shop Cash</small>
+                <h4 class="m-0" id="analytics-cash">Rs. 0</h4>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-card card-stock shadow-sm">
+                <small class="d-block text-uppercase">Stock Value</small>
+                <h4 class="m-0" id="analytics-stock-val">Rs. 0</h4>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-card card-sales shadow-sm">
+                <small class="d-block text-uppercase">Total Sales</small>
+                <h4 class="m-0" id="analytics-sales">Rs. 0</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Billing Area -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between">
+                    <span>🛒 Quick Billing Counter</span>
+                    <small id="analytics-items-count">0 items in stock</small>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <input type="text" id="scan-input" class="form-control form-control-lg" placeholder="Scan Barcode / Barcode ID..." autofocus>
+                        <button class="btn btn-primary" onclick="handleScan()">Add</button>
+                    </div>
+
+                    <div class="cart-table mb-2">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Price</th>
+                                    <th>Qty</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-list"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-light p-3 rounded-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="m-0">Total Amount:</h5>
+                            <h3 class="text-success fw-bold m-0" id="cart-total">Rs. 0.00</h3>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number" id="cash-given" class="form-control" placeholder="Cash Received" oninput="calcChange()">
+                            </div>
+                            <div class="col-6">
+                                <input type="text" id="cash-change" class="form-control fw-bold" placeholder="Change Return" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success btn-lg w-100 fw-bold" onclick="completeSale()">Complete Sale & Print Receipt</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Product Form -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3 mb-3">
+                <div class="card-header bg-primary text-white fw-bold">➕ Add / Edit Product</div>
+                <div class="card-body">
+                    <form id="product-form" onsubmit="saveProduct(event)">
+                        <div class="mb-2">
+                            <input type="text" id="p-barcode" class="form-control form-control-sm" placeholder="Barcode / Product Code" required>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" id="p-name" class="form-control form-control-sm" placeholder="Product Name (e.g. Matte Lipstick)" required>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col"><input type="number" step="0.01" id="p-cost" class="form-control form-control-sm" placeholder="Cost Price" required></div>
+                            <div class="col"><input type="number" step="0.01" id="p-sell" class="form-control form-control-sm" placeholder="Selling Price" required></div>
+                        </div>
+                        <div class="mb-2">
+                            <input type="number" id="p-stock" class="form-control form-control-sm" placeholder="Stock Quantity" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Save Product</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stock List -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-secondary text-white fw-bold">📦 Inventory Stock</div>
+                <div class="card-body p-0" style="max-height: 220px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush" id="inventory-list"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Thermal Print Template -->
+<div id="receipt-print" class="d-none">
+    <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px;">
+        <h3 style="margin: 0;">COSMETICS SHOP</h3>
+        <p style="margin: 2px 0;">POS Sales Receipt</p>
+        <small id="rec-date"></small>
+    </div>
+    <table style="width: 100%; margin-top: 10px; font-size: 11px;">
+        <thead>
+            <tr style="border-bottom: 1px solid #000;">
+                <th style="text-align: left;">Item</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Total</th>
+            </tr>
+        </thead>
+        <tbody id="rec-items"></tbody>
+    </table>
+    <div style="border-top: 1px dashed #000; margin-top: 10px; padding-top: 5px;">
+        <div style="display: flex; justify-content: space-between;"><strong>Total:</strong> <span id="rec-total"></span></div>
+        <div style="display: flex; justify-content: space-between;"><span>Cash Paid:</span> <span id="rec-paid"></span></div>
+        <div style="display: flex; justify-content: space-between;"><span>Change:</span> <span id="rec-change"></span></div>
+    </div>
+    <p style="text-align: center; margin-top: 15px;">*** Thank You For Shopping! ***</p>
+</div>
+
+<script>
+let cart = [];
+let html5QrcodeScanner = null;
+
+function getStoreData() {
+    let data = localStorage.getItem('cosmetics_pos_db');
+    return data ? JSON.parse(data) : { products: {}, sales: [], total_cash: 0 };
+}
+
+function saveStoreData(data) {
+    localStorage.setItem('cosmetics_pos_db', JSON.stringify(data));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadAnalytics();
+    loadInventory();
+    document.getElementById('scan-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleScan();
+    });
+});
+
+function loadAnalytics() {
+    let db = getStoreData();
+    let totalStockItems = 0;
+    let totalStockVal = 0;
+    Object.values(db.products).forEach(p => {
+        totalStockItems += parseInt(p.stock);
+        totalStockVal += parseInt(p.stock) * parseFloat(p.cost_price);
+    });
+    let totalSalesVal = db.sales.reduce((acc, s) => acc + parseFloat(s.total_bill), 0);
+
+    document.getElementById('analytics-cash').innerText = `Rs. ${db.total_cash.toFixed(2)}`;
+    document.getElementById('analytics-stock-val').innerText = `Rs. ${totalStockVal.toFixed(2)}`;
+    document.getElementById('analytics-items-count').innerText = `${totalStockItems} Units in Stock`;
+    document.getElementById('analytics-sales').innerText = `Rs. ${totalSalesVal.toFixed(2)}`;
+}
+
+function loadInventory() {
+    let db = getStoreData();
+    let list = document.getElementById('inventory-list');
+    list.innerHTML = '';
+    Object.values(db.products).forEach(p => {
+        let badgeClass = p.stock <= 5 ? 'bg-danger' : 'bg-success';
+        list.innerHTML += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${p.name}</strong> <small class="text-muted">(${p.barcode})</small><br>
+                    <small>Sell: Rs.${p.sell_price} | Cost: Rs.${p.cost_price}</small>
+                </div>
+                <span class="badge ${badgeClass} rounded-pill">${p.stock} Qty</span>
+            </li>`;
+    });
+}
+
+function handleScan(scannedBarcode = null) {
+    let input = document.getElementById('scan-input');
+    let barcode = scannedBarcode || input.value.trim();
+    if (!barcode) return;
+
+    let db = getStoreData();
+    let product = db.products[barcode];
+
+    if (product) {
+        addToCart(product);
+        input.value = '';
+    } else {
+        alert('Product barcode not found!');
+        input.value = '';
+    }
+}
+
+function addToCart(product) {
+    let existing = cart.find(item => item.barcode === product.barcode);
+    if (existing) {
+        if (existing.qty + 1 > product.stock) {
+            alert('Stock limit reached!');
+            return;
+        }
+        existing.qty++;
+    } else {
+        cart.push({ barcode: product.barcode, name: product.name, price: product.sell_price, qty: 1 });
+    }
+    renderCart();
+}
+
+function renderCart() {
+    let tbody = document.getElementById('cart-list');
+    tbody.innerHTML = '';
+    let total = 0;
+
+    cart.forEach((item, index) => {
+        let itemTotal = item.price * item.qty;
+        total += itemTotal;
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>Rs.${item.price}</td>
+                <td>${item.qty}</td>
+                <td>Rs.${itemTotal}</td>
+                <td><button class="btn btn-sm btn-danger py-0 px-2" onclick="removeFromCart(${index})">✕</button></td>
+            </tr>`;
+    });
+
+    document.getElementById('cart-total').innerText = `Rs. ${total.toFixed(2)}`;
+    calcChange();
+}
+
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+function calcChange() {
+    let total = parseFloat(document.getElementById('cart-total').innerText.replace('Rs. ', '')) || 0;
+    let given = parseFloat(document.getElementById('cash-given').value) || 0;
+    let change = given - total;
+    document.getElementById('cash-change').value = change >= 0 ? `Rs. ${change.toFixed(2)}` : 'Insufficient Cash';
+}
+
+function completeSale() {
+    if (cart.length === 0) return alert('Cart is empty!');
+    let given = parseFloat(document.getElementById('cash-given').value) || 0;
+    let total = parseFloat(document.getElementById('cart-total').innerText.replace('Rs. ', ''));
+
+    if (given < total) return alert('Cash received is less than total bill!');
+
+    let db = getStoreData();
+    for (let item of cart) {
+        if (db.products[item.barcode]) {
+            db.products[item.barcode].stock -= item.qty;
+        }
+    }
+
+    let changeGiven = given - total;
+    db.total_cash += total;
+    let saleRecord = { cart: cart, total_bill: total, payment_received: given, change_given: changeGiven };
+    db.sales.push(saleRecord);
+
+    saveStoreData(db);
+    printReceipt(saleRecord);
+
+    cart = [];
+    document.getElementById('cash-given').value = '';
+    renderCart();
+    loadAnalytics();
+    loadInventory();
+}
+
+function printReceipt(saleData) {
+    document.getElementById('rec-date').innerText = new Date().toLocaleString();
+    let recItems = document.getElementById('rec-items');
+    recItems.innerHTML = '';
+    saleData.cart.forEach(item => {
+        recItems.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td style="text-align: center;">${item.qty}</td>
+                <td style="text-align: right;">Rs.${(item.price * item.qty).toFixed(2)}</td>
+            </tr>`;
+    });
+    document.getElementById('rec-total').innerText = `Rs. ${saleData.total_bill.toFixed(2)}`;
+    document.getElementById('rec-paid').innerText = `Rs. ${saleData.payment_received.toFixed(2)}`;
+    document.getElementById('rec-change').innerText = `Rs. ${saleData.change_given.toFixed(2)}`;
+
+    let printArea = document.getElementById('receipt-print');
+    printArea.classList.remove('d-none');
+    window.print();
+    printArea.classList.add('d-none');
+}
+
+function saveProduct(e) {
+    e.preventDefault();
+    let db = getStoreData();
+    let barcode = document.getElementById('p-barcode').value.trim();
+
+    db.products[barcode] = {
+        barcode: barcode,
+        name: document.getElementById('p-name').value,
+        cost_price: parseFloat(document.getElementById('p-cost').value),
+        sell_price: parseFloat(document.getElementById('p-sell').value),
+        stock: parseInt(document.getElementById('p-stock').value)
+    };
+
+    saveStoreData(db);
+    document.getElementById('product-form').reset();
+    loadInventory();
+    loadAnalytics();
+    alert('Product saved successfully!');
+}
+
+function toggleCameraScanner() {
+    let container = document.getElementById('reader-container');
+    if (container.classList.contains('d-none')) {
+        container.classList.remove('d-none');
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render((decodedText) => {
+            handleScan(decodedText);
+            toggleCameraScanner();
+        });
+    } else {
+        if (html5QrcodeScanner) html5QrcodeScanner.clear();
+        container.classList.add('d-none');
+    }
+}
+</script>
+</body>
+</html>
