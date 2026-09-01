@@ -12,6 +12,111 @@
 @media(max-width:700px){.sidebar{width:70px;padding:12px 8px}.brand div:not(.brand-icon),.nav-label,.nav button span{display:none}.brand{padding:6px;border:0}.nav button{text-align:center}.main{margin-left:70px;width:calc(100% - 70px);padding:15px}.cards,.three{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
 @media print{.sidebar,.top,.no-print{display:none!important}.main{margin:0;width:100%;padding:0}.print-only{display:block}.view:not(#view-reports){display:none!important}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style id="itco-final-screen-fix">
+html,body{max-width:100%;overflow-x:hidden}
+#itcoBusinessView{
+  box-sizing:border-box;
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+  padding:16px clamp(10px,2vw,24px)!important;
+}
+#itcoBusinessView *{box-sizing:border-box;max-width:100%}
+#itcoBusinessView .itco-fin-grid{
+  grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));
+}
+#itcoBusinessView .itco-modal-box{
+  width:min(900px,calc(100vw - 24px));
+  max-width:calc(100vw - 24px);
+}
+#itcoBusinessView .itco-table{
+  display:block;
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#itcoBusinessView .itco-table table{min-width:620px}
+#itcoBusinessView .itco-section-title{
+  flex-wrap:wrap;
+}
+#itcoBusinessView label{min-width:0}
+#itcoBusinessView input,#itcoBusinessView select,#itcoBusinessView textarea{
+  max-width:100%;
+}
+@media(max-width:700px){
+  #itcoBusinessView{padding:12px 10px!important}
+  #itcoBusinessView h2{font-size:20px}
+  #itcoBusinessView h3{font-size:16px}
+  #itcoBusinessView .itco-section-title{align-items:flex-start}
+  #itcoBusinessView .itco-modal{padding:8px}
+  #itcoBusinessView .itco-modal-box{padding:14px;width:calc(100vw - 16px);max-width:calc(100vw - 16px)}
+  #itcoBusinessView .itco-modal-grid{grid-template-columns:1fr!important}
+  #itcoBusinessView .itco-wide{grid-column:auto!important}
+  #itcoBusinessLauncher{
+    right:10px!important;bottom:58px!important;
+    max-width:calc(100vw - 20px)!important;
+    white-space:normal!important;
+  }
+}
+</style>
+
+
+<style id="itco-final-ui-fix">
+/* Sidebar: desktop collapse/expand */
+#itcoSidebarToggle{
+  position:fixed;left:10px;top:12px;z-index:100002;
+  width:42px;height:42px;border:0;border-radius:10px;
+  background:#111;color:#fff;cursor:pointer;font-size:21px;
+  box-shadow:0 4px 14px rgba(0,0,0,.18)
+}
+body.itco-sidebar-collapsed .sidebar,
+body.itco-sidebar-collapsed aside,
+body.itco-sidebar-collapsed nav[data-sidebar],
+body.itco-sidebar-collapsed #sidebar{
+  width:70px!important;min-width:70px!important;
+}
+body.itco-sidebar-collapsed .sidebar .label,
+body.itco-sidebar-collapsed .sidebar .nav-label,
+body.itco-sidebar-collapsed .sidebar span:not(.icon),
+body.itco-sidebar-collapsed aside span:not(.icon),
+body.itco-sidebar-collapsed nav[data-sidebar] span:not(.icon){
+  display:none!important;
+}
+body.itco-sidebar-collapsed .sidebar button,
+body.itco-sidebar-collapsed .sidebar a,
+body.itco-sidebar-collapsed aside button,
+body.itco-sidebar-collapsed aside a{
+  justify-content:center!important;padding-left:8px!important;padding-right:8px!important;
+}
+body.itco-sidebar-collapsed main,
+body.itco-sidebar-collapsed .main-content,
+body.itco-sidebar-collapsed #main-content{
+  margin-left:70px!important;
+}
+
+/* Khata/business screen: always visible when launched, with a clean viewport */
+#itcoBusinessView{
+  position:relative!important;
+  z-index:10!important;
+  min-height:calc(100vh - 30px)!important;
+  background:#fff;
+}
+#itcoBusinessView .itco-modal{z-index:100010!important}
+#itcoBusinessView .itco-fin-grid{
+  width:100%!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+}
+@media(max-width:900px){
+  #itcoBusinessView .itco-fin-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:600px){
+  #itcoBusinessView .itco-fin-grid{grid-template-columns:1fr!important}
+  #itcoBusinessView{padding:12px 8px!important}
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -275,5 +380,345 @@ function restoreData(){let i=document.createElement('input');i.type='file';i.acc
 function clearData(){if(confirm('This will permanently erase all shop data from this browser. Continue?')){localStorage.removeItem(KEY);location.reload()}}
 init();
 </script>
+
+<script>
+(function () {
+  const SUPABASE_URL = "https://bpxslrikjpmgfizhhixs.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_99g4dfJ0cKRXa8SCrliNEw_x1xUSPDv";
+  const STATE_ID = "main";
+  let supabaseClient = null;
+  let ready = false;
+  let pushTimer = null;
+
+  function status(message) {
+    let el = document.getElementById("itco-cloud-status");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "itco-cloud-status";
+      el.style.cssText =
+        "position:fixed;right:14px;bottom:14px;z-index:999999;" +
+        "padding:8px 12px;border-radius:999px;background:#fff;" +
+        "border:1px solid #ddd;box-shadow:0 3px 14px rgba(0,0,0,.12);" +
+        "font:600 12px Arial;max-width:360px;";
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+  }
+
+  function getLocalData() {
+    try {
+      return typeof db === "function" ? db() : null;
+    } catch (e) {
+      console.error("ITCO db error:", e);
+      return null;
+    }
+  }
+
+  async function push() {
+    const data = getLocalData();
+    if (!data || !supabaseClient) return;
+
+    const result = await supabaseClient
+      .from("app_state")
+      .upsert(
+        {
+          id: STATE_ID,
+          data: data,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: "id" }
+      );
+
+    if (result.error) {
+      console.error("ITCO cloud write:", result.error);
+      status("☁ Cloud Error: " + result.error.message);
+      return;
+    }
+    status("☁ ITCO Cloud: Synced");
+  }
+
+  function queuePush() {
+    if (!ready) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 500);
+  }
+
+  async function initialSync() {
+    status("☁ ITCO Cloud: Connecting…");
+
+    const result = await supabaseClient
+      .from("app_state")
+      .select("id,data,updated_at")
+      .eq("id", STATE_ID)
+      .maybeSingle();
+
+    if (result.error) {
+      console.error("ITCO cloud read:", result.error);
+      status("☁ Cloud Error: " + result.error.message);
+      return;
+    }
+
+    if (result.data && result.data.data) {
+      localStorage.setItem(KEY, JSON.stringify(result.data.data));
+      if (typeof renderAll === "function") renderAll();
+    } else {
+      await push();
+    }
+
+    ready = true;
+    status("☁ ITCO Cloud: Synced");
+  }
+
+  function start() {
+    if (!window.supabase || typeof window.supabase.createClient !== "function") {
+      status("☁ Cloud Error: Supabase library not loaded");
+      return;
+    }
+
+    // The publishable key is passed directly to createClient().
+    // Supabase JS handles the required API headers itself.
+    supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    window.ITCO_SUPABASE = supabaseClient;
+    window.ITCO_syncNow = initialSync;
+
+    // Hook the app's existing save function.
+    if (typeof window.save === "function" && !window.__itcoSaveHooked) {
+      window.__itcoSaveHooked = true;
+      const originalSave = window.save;
+      window.save = function () {
+        const result = originalSave.apply(this, arguments);
+        queuePush();
+        return result;
+      };
+    }
+
+    // Receive changes made from another browser/device.
+    supabaseClient
+      .channel("itco-app-state")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "app_state",
+          filter: "id=eq.main"
+        },
+        function (payload) {
+          if (!payload.new || !payload.new.data) return;
+          localStorage.setItem(KEY, JSON.stringify(payload.new.data));
+          if (typeof renderAll === "function") renderAll();
+          status("☁ ITCO Cloud: Synced");
+        }
+      )
+      .subscribe();
+
+    setTimeout(initialSync, 1000);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+})();
+</script>
+
+
+<style id="itco-business-upgrade-css">
+.itco-fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0}
+.itco-fin-card{background:#fff;border:1px solid #e6e0d5;border-radius:14px;padding:14px;box-shadow:0 5px 18px rgba(0,0,0,.05)}
+.itco-fin-card small{display:block;color:#777;margin-bottom:6px}.itco-fin-card strong{font-size:21px}
+.itco-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:none;align-items:center;justify-content:center;padding:20px}
+.itco-modal.open{display:flex}.itco-modal-box{background:#fff;width:min(900px,96vw);max-height:90vh;overflow:auto;border-radius:18px;padding:20px}
+.itco-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.itco-modal-grid input,.itco-modal-grid select,.itco-modal-grid textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ddd;border-radius:9px}
+.itco-wide{grid-column:1/-1}.itco-btn{border:0;border-radius:9px;padding:10px 14px;cursor:pointer}.itco-primary{background:#111;color:#fff}.itco-danger{background:#fee;color:#900}
+.itco-table{width:100%;border-collapse:collapse;margin-top:12px}.itco-table th,.itco-table td{padding:9px;border-bottom:1px solid #eee;text-align:left;font-size:13px}.itco-table th{background:#faf8f3}
+.itco-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
+@media(max-width:650px){.itco-modal-grid{grid-template-columns:1fr}.itco-wide{grid-column:auto}}
+</style>
+
+<!-- ITCO BUSINESS MANAGEMENT UPGRADE -->
+<div id="itcoBusinessView" style="display:none;padding:18px">
+  <div class="itco-section-title">
+    <div><h2 style="margin:0">ITCO Accounts & Closing</h2><div style="color:#777">Khata • Merchant Credit • Galla • Expenses • Savings • Closing</div></div>
+    <button class="itco-btn itco-primary" onclick="itcoOpenLedger()">+ New Khata</button>
+  </div>
+  <div class="itco-fin-grid" id="itcoFinanceCards"></div>
+  <div class="itco-section-title"><h3>Customer / Dukandaar Khata</h3><div><button class="itco-btn" onclick="itcoOpenLedger('customer')">+ Customer</button> <button class="itco-btn" onclick="itcoOpenLedger('merchant')">+ Dukandaar</button></div></div>
+  <div id="itcoLedgerList"></div>
+  <div class="itco-section-title"><h3>Cash & Closing</h3><div><button class="itco-btn" onclick="itcoOpenCash()">Opening Galla</button> <button class="itco-btn" onclick="itcoCloseDay()">Daily Closing</button></div></div>
+  <div id="itcoClosingSummary"></div>
+</div>
+
+<div class="itco-modal" id="itcoLedgerModal">
+ <div class="itco-modal-box">
+  <div class="itco-section-title"><h3 id="itcoLedgerTitle">New Khata</h3><button class="itco-btn" onclick="itcoCloseModal('itcoLedgerModal')">✕</button></div>
+  <div class="itco-modal-grid">
+   <input id="itcoLType" type="hidden" value="customer">
+   <label>Name<input id="itcoLName" placeholder="Customer / Dukandaar name"></label>
+   <label>Phone<input id="itcoLPhone" placeholder="03xxxxxxxxx"></label>
+   <label>Opening Balance (PKR)<input id="itcoLOpening" type="number" min="0" value="0"></label>
+   <label>Notes<input id="itcoLNotes" placeholder="e.g. payment daily / 2 days"></label>
+   <label class="itco-wide">Address<textarea id="itcoLAddress" rows="2"></textarea></label>
+  </div>
+  <button class="itco-btn itco-primary" style="margin-top:12px" onclick="itcoSaveLedger()">Save Khata</button>
+ </div>
+</div>
+
+<div class="itco-modal" id="itcoTxnModal">
+ <div class="itco-modal-box">
+  <div class="itco-section-title"><h3 id="itcoTxnTitle">Khata Entry</h3><button class="itco-btn" onclick="itcoCloseModal('itcoTxnModal')">✕</button></div>
+  <div class="itco-modal-grid">
+   <input id="itcoTId" type="hidden"><input id="itcoTKind" type="hidden">
+   <label>Entry Type<select id="itcoTType"><option value="credit">Maal/Bill Udhaar (+)</option><option value="payment">Payment Received (-)</option></select></label>
+   <label>Amount (PKR)<input id="itcoTAmount" type="number" min="0" step="0.01"></label>
+   <label>Due Date<input id="itcoTDue" type="date"></label>
+   <label>Description<input id="itcoTDesc" placeholder="Bill / maal / payment details"></label>
+  </div>
+  <button class="itco-btn itco-primary" style="margin-top:12px" onclick="itcoSaveTxn()">Save Entry</button>
+ </div>
+</div>
+
+<div class="itco-modal" id="itcoCashModal">
+ <div class="itco-modal-box">
+  <div class="itco-section-title"><h3>Opening Galla</h3><button class="itco-btn" onclick="itcoCloseModal('itcoCashModal')">✕</button></div>
+  <label>Today opening cash (PKR)<input id="itcoOpeningCash" type="number" min="0"></label>
+  <button class="itco-btn itco-primary" style="margin-top:12px" onclick="itcoSaveCash()">Save</button>
+ </div>
+</div>
+
+<script id="itco-business-upgrade-js">
+(function(){
+ const K='itcoBusinessDataV1';
+ const empty=()=>({ledgers:[],txns:[],openings:{},closings:[],expenses:[],savings:[]});
+ function get(){try{return JSON.parse(localStorage.getItem(K))||empty()}catch(e){return empty()}}
+ function set(d){localStorage.setItem(K,JSON.stringify(d)); if(typeof window.save==='function'){try{const base=typeof db==='function'?db():{}; base.itcoBusiness=d; window.save(base)}catch(e){}} render()}
+ function money(n){return 'PKR '+Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:2})}
+ function id(){return 'itco-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
+ function today(){return new Date().toISOString().slice(0,10)}
+ window.itcoOpenLedger=function(type){
+   document.getElementById('itcoLType').value=type||'customer';
+   document.getElementById('itcoLedgerTitle').textContent=(type==='merchant'?'New Dukandaar Khata':'New Customer Khata');
+   ['itcoLName','itcoLPhone','itcoLOpening','itcoLNotes','itcoLAddress'].forEach(x=>document.getElementById(x).value=x==='itcoLOpening'?0:'');
+   document.getElementById('itcoLedgerModal').classList.add('open')
+ }
+ window.itcoCloseModal=function(id){document.getElementById(id).classList.remove('open')}
+ window.itcoSaveLedger=function(){
+   const d=get(), l={id:id(),type:document.getElementById('itcoLType').value,name:document.getElementById('itcoLName').value.trim(),phone:document.getElementById('itcoLPhone').value.trim(),opening:Number(document.getElementById('itcoLOpening').value||0),notes:document.getElementById('itcoLNotes').value,address:document.getElementById('itcoLAddress').value,createdAt:new Date().toISOString()};
+   if(!l.name)return alert('Name required');
+   d.ledgers.push(l); if(l.opening)d.txns.push({id:id(),ledgerId:l.id,type:'credit',amount:l.opening,date:today(),desc:'Opening balance'});
+   set(d); itcoCloseModal('itcoLedgerModal')
+ }
+ window.itcoOpenTxn=function(lid){document.getElementById('itcoTId').value=lid;document.getElementById('itcoTAmount').value='';document.getElementById('itcoTDue').value=today();document.getElementById('itcoTDesc').value='';document.getElementById('itcoTxnModal').classList.add('open')}
+ window.itcoSaveTxn=function(){
+   const d=get(), t={id:id(),ledgerId:document.getElementById('itcoTId').value,type:document.getElementById('itcoTType').value,amount:Number(document.getElementById('itcoTAmount').value||0),due:document.getElementById('itcoTDue').value,desc:document.getElementById('itcoTDesc').value,date:today()};
+   if(!t.amount)return alert('Amount required');
+   d.txns.push(t); set(d); itcoCloseModal('itcoTxnModal')
+ }
+ window.itcoDeleteLedger=function(lid){if(!confirm('Delete this khata?'))return;const d=get();d.ledgers=d.ledgers.filter(x=>x.id!==lid);d.txns=d.txns.filter(x=>x.ledgerId!==lid);set(d)}
+ window.itcoOpenCash=function(){document.getElementById('itcoOpeningCash').value=get().openings[today()]||0;document.getElementById('itcoCashModal').classList.add('open')}
+ window.itcoSaveCash=function(){const d=get();d.openings[today()]=Number(document.getElementById('itcoOpeningCash').value||0);set(d);itcoCloseModal('itcoCashModal')}
+ window.itcoCloseDay=function(){
+   const d=get(), date=today(), base=typeof db==='function'?db():{}, sales=(base.sales||[]).filter(s=>String(s.date||'').slice(0,10)===date);
+   const cashSales=sales.reduce((a,s)=>a+Number(s.total||0),0);
+   const expenses=(base.expenses||[]).filter(e=>String(e.date||'').slice(0,10)===date).reduce((a,e)=>a+Number(e.amount||0),0);
+   const opening=Number(d.openings[date]||0), expected=opening+cashSales-expenses;
+   const actual=Number(prompt('Actual cash in galla today (PKR):',expected)||0);
+   d.closings.push({id:id(),date,opening,cashSales,expenses,expected,actual,difference:actual-expected});
+   set(d); alert('Daily closing saved. Difference: '+money(actual-expected))
+ }
+ function balance(lid){const d=get(),l=d.ledgers.find(x=>x.id===lid);if(!l)return 0;return Number(l.opening||0)+d.txns.filter(t=>t.ledgerId===lid).reduce((a,t)=>a+(t.type==='credit'?Number(t.amount):-Number(t.amount)),0)}
+ function render(){
+   const root=document.getElementById('itcoLedgerList'); if(!root)return;
+   const d=get(), base=typeof db==='function'?db():{}, sales=(base.sales||[]), expenses=(base.expenses||[]);
+   const totalReceivable=d.ledgers.reduce((a,l)=>a+Math.max(0,balance(l.id)),0);
+   const todaySales=sales.filter(s=>String(s.date||'').slice(0,10)===today()).reduce((a,s)=>a+Number(s.total||0),0);
+   const todayExp=expenses.filter(e=>String(e.date||'').slice(0,10)===today()).reduce((a,e)=>a+Number(e.amount||0),0);
+   const opening=Number(d.openings[today()]||0), expected=opening+todaySales-todayExp;
+   document.getElementById('itcoFinanceCards').innerHTML=
+    '<div class="itco-fin-card"><small>Today Sales</small><strong>'+money(todaySales)+'</strong></div>'+
+    '<div class="itco-fin-card"><small>Today Expenses</small><strong>'+money(todayExp)+'</strong></div>'+
+    '<div class="itco-fin-card"><small>Khata Receivable</small><strong>'+money(totalReceivable)+'</strong></div>'+
+    '<div class="itco-fin-card"><small>Expected Galla</small><strong>'+money(expected)+'</strong></div>';
+   if(!d.ledgers.length){root.innerHTML='<p style="color:#777">No khata yet. Customer ya Dukandaar add karo.</p>'}
+   else root.innerHTML='<div style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="itco-table"><thead><tr><th>Type</th><th>Name</th><th>Phone</th><th>Balance</th><th>Action</th></tr></thead><tbody>'+
+     d.ledgers.map(l=>'<tr><td>'+ (l.type==='merchant'?'Dukandaar':'Customer')+'</td><td><b>'+esc(l.name)+'</b></td><td>'+esc(l.phone||'')+'</td><td><b>'+money(Math.max(0,balance(l.id)))+'</b></td><td><button class="itco-btn" onclick="itcoOpenTxn(\''+l.id+'\')">+ Entry/Payment</button> <button class="itco-btn itco-danger" onclick="itcoDeleteLedger(\''+l.id+'\')">Delete</button></td></tr>').join('')+'</tbody></table></div>';
+   const cs=d.closings.slice(-7).reverse();
+   document.getElementById('itcoClosingSummary').innerHTML=cs.length?'<div style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="itco-table"><thead><tr><th>Date</th><th>Expected</th><th>Actual</th><th>Difference</th></tr></thead><tbody>'+cs.map(c=>'<tr><td>'+c.date+'</td><td>'+money(c.expected)+'</td><td>'+money(c.actual)+'</td><td>'+money(c.difference)+'</td></tr>').join('')+'</tbody></table></div>':'<p style="color:#777">No closing recorded yet.</p>';
+ }
+ function esc(x){return String(x||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+ window.itcoShowBusiness=function(){const v=document.getElementById('itcoBusinessView');if(v){v.style.display='block';render();v.scrollIntoView({behavior:'smooth'})}}
+ setTimeout(render,1500)
+})();
+</script>
+
+<script>
+(function(){
+ setTimeout(function(){
+   if(!document.getElementById('itcoBusinessLauncher')){
+     const b=document.createElement('button'); b.id='itcoBusinessLauncher';
+     b.textContent='📒 ITCO Khata & Closing';
+     b.style.cssText='position:fixed;right:16px;bottom:56px;z-index:99998;border:0;border-radius:10px;padding:10px 14px;background:#111;color:#fff;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.18);cursor:pointer';
+     b.onclick=window.itcoShowBusiness; document.body.appendChild(b);
+   }
+ },800);
+})();
+</script>
+
+
+<script id="itco-final-ui-fix-js">
+(function(){
+  function addUI(){
+    if(document.getElementById('itcoSidebarToggle')) return;
+
+    const toggle=document.createElement('button');
+    toggle.id='itcoSidebarToggle';
+    toggle.type='button';
+    toggle.title='Open / collapse menu';
+    toggle.textContent='☰';
+    toggle.onclick=function(){
+      document.body.classList.toggle('itco-sidebar-collapsed');
+      toggle.textContent=document.body.classList.contains('itco-sidebar-collapsed')?'☰':'✕';
+    };
+    document.body.appendChild(toggle);
+
+    const khata=document.createElement('button');
+    khata.type='button';
+    khata.title='Khata & Closing';
+    khata.innerHTML='<span class="icon">📒</span><span class="label">Khata & Closing</span>';
+    khata.style.cssText='display:flex;align-items:center;gap:9px;width:calc(100% - 20px);margin:10px;border:0;border-radius:9px;padding:11px 12px;background:#111;color:#fff;cursor:pointer;font-weight:700';
+    khata.onclick=function(){
+      if(typeof window.itcoShowBusiness==='function'){
+        window.itcoShowBusiness();
+        const v=document.getElementById('itcoBusinessView');
+        if(v){v.style.display='block';v.scrollIntoView({behavior:'smooth',block:'start'});}
+      }
+    };
+
+    // Prefer the existing sidebar/nav container; otherwise create a small menu.
+    const candidates=[
+      document.querySelector('.sidebar'),
+      document.querySelector('aside'),
+      document.querySelector('nav'),
+      document.getElementById('sidebar')
+    ].filter(Boolean);
+    const parent=candidates[0];
+    if(parent) parent.appendChild(khata);
+    else {
+      khata.style.position='fixed';khata.style.left='10px';khata.style.top='64px';khata.style.zIndex='100001';
+      document.body.appendChild(khata);
+    }
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(addUI,500));
+  else setTimeout(addUI,500);
+})();
+</script>
+
 </body>
 </html>
