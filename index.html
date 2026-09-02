@@ -148,6 +148,59 @@ html,body{max-width:100%;overflow-x:hidden}
 @media(max-width:600px){.itco-edit-grid{grid-template-columns:1fr}}
 </style>
 
+
+<style id="itco-easy-mobile-theme">
+html,body{overflow-x:hidden}
+.itco-help{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.itco-optional{font-size:9px;color:var(--primary);font-weight:800;margin-left:4px}
+.itco-input-action{display:flex;gap:6px}
+.itco-input-action input{flex:1;min-width:0}
+.itco-input-action .btn{width:44px;padding:8px}
+.itco-photo-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.itco-photo-row input{flex:1;min-width:180px}
+.itco-photo-preview img{max-width:90px;max-height:90px;border-radius:10px;margin-top:8px;border:1px solid var(--line);object-fit:cover}
+.itco-cost-note{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+.itco-scanner-modal{position:fixed;inset:0;background:rgba(7,12,22,.86);z-index:100200;display:none;align-items:center;justify-content:center;padding:12px}
+.itco-scanner-modal.open{display:flex}
+.itco-scanner-box{width:min(520px,100%);background:#fff;border-radius:20px;padding:14px;box-shadow:0 20px 70px rgba(0,0,0,.35)}
+.itco-scanner-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.itco-scanner-head b{display:block;font-size:18px}.itco-scanner-head small{color:var(--muted)}
+.itco-video-wrap{position:relative;background:#000;border-radius:16px;overflow:hidden;aspect-ratio:4/3}
+#itcoScannerVideo{width:100%;height:100%;object-fit:cover;display:block}
+.itco-scan-frame{position:absolute;left:12%;right:12%;top:28%;bottom:28%;border:2px solid #fff;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.18)}
+.itco-scanner-status{padding:10px 2px;font-size:12px;color:var(--muted);min-height:18px}
+.itco-manual-scan{display:flex;gap:7px}.itco-manual-scan input{flex:1;min-width:0;padding:11px;border:1px solid var(--line);border-radius:10px}
+
+/* Make the phone layout a simple full-width app with a slide-out menu. */
+@media(max-width:700px){
+  .sidebar{left:-270px!important;width:250px!important;min-width:250px!important;padding:18px 12px!important;transition:left .22s ease;z-index:100005;box-shadow:12px 0 30px rgba(0,0,0,.18)}
+  .brand div:not(.brand-icon),.nav-label,.nav button span{display:block!important}
+  .brand{padding:8px 10px 18px!important}
+  .nav button{text-align:left!important}
+  body.itco-mobile-menu-open .sidebar{left:0!important}
+  .main{margin-left:0!important;width:100%!important;padding:62px 11px 30px!important}
+  #itcoSidebarToggle{left:10px!important;top:10px!important;width:44px!important;height:44px!important;border-radius:13px!important;background:#fff!important;color:var(--text)!important;border:1px solid var(--line)!important;box-shadow:0 5px 18px rgba(0,0,0,.10)!important}
+  .top{margin-bottom:14px;gap:10px;align-items:flex-start}.top h1{font-size:20px}
+  .top-actions{flex-wrap:wrap;justify-content:flex-end}.top-actions .btn{padding:9px 10px}
+  .card{border-radius:15px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,.06)}
+  .section{margin-top:12px}.section-title h3{font-size:15px}
+  .form-grid{grid-template-columns:1fr!important}.pos-grid{grid-template-columns:1fr!important}
+  .product-search{flex-wrap:wrap}.product-search input{min-width:0;width:100%;flex:1 1 100%}.product-search .btn{flex:1}
+  .quick{grid-template-columns:1fr 1fr}.actions{justify-content:stretch}.actions .btn{flex:1}
+  .toolbar{width:100%}.toolbar input,.toolbar select{width:100%;min-height:42px}
+  .table-wrap{border-radius:10px}.table th,.table td{padding:9px 7px}
+  #itcoBusinessLauncher{right:10px!important;bottom:14px!important;font-size:12px!important}
+}
+/* Blur all app content while dashboard PIN is open. */
+body.itco-pin-blur .app,
+body.itco-pin-blur #itcoBusinessView,
+body.itco-pin-blur #itcoBusinessLauncher,
+body.itco-pin-blur #itcoSidebarToggle,
+body.itco-pin-blur #itco-cloud-status{filter:blur(8px)!important;pointer-events:none!important;user-select:none!important}
+body.itco-pin-blur{overflow:hidden}
+#itcoPinModal{z-index:100500!important}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -212,7 +265,7 @@ html,body{max-width:100%;overflow-x:hidden}
  <div class="grid pos-grid">
   <div class="card">
    <div class="section-title"><h3>Create New Invoice</h3><span id="invoiceNo" class="badge b-blue"></span></div>
-   <div class="product-search"><input id="posSearch" placeholder="Search product or SCAN barcode..." onkeydown="if(event.key==='Enter')scanPOSBarcode()" oninput="renderPOSProducts()"><button class="btn btn-primary" onclick="focusPos()">Search</button></div>
+   <div class="product-search"><input id="posSearch" placeholder="Search product or scan barcode..." onkeydown="if(event.key==='Enter')scanPOSBarcode()" oninput="renderPOSProducts()"><button class="btn btn-primary" onclick="focusPos()">Search</button><button class="btn btn-gold" type="button" onclick="itcoOpenScanner('pos')">📷 Scan</button></div>
    <div id="posProducts" class="quick"></div>
    <div class="section table-wrap"><table class="table"><thead><tr><th>Item</th><th>Price</th><th>Qty</th><th class="num">Total</th><th></th></tr></thead><tbody id="cartBody"></tbody></table></div>
   </div>
@@ -221,9 +274,9 @@ html,body{max-width:100%;overflow-x:hidden}
    <div class="field"><label>CUSTOMER</label><select id="saleCustomer"></select></div>
    <div class="form-grid" style="margin-top:10px">
     <div class="field"><label>PRICE TYPE</label><select id="priceType" onchange="renderCart()"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select></div>
-    <div class="field"><label>DISCOUNT</label><input id="saleDiscount" type="number" min="0" value="0" oninput="renderCart()"></div>
+    <div class="field"><label>DISCOUNT %</label><input id="saleDiscountPct" type="number" min="0" max="100" step="0.01" value="0" oninput="itcoSyncDiscount()"><small class="itco-help">Amount: <b id="saleDiscountPreview">Rs. 0</b></small><input id="saleDiscount" type="hidden" value="0"></div>
     <div class="field"><label>PAYMENT</label><select id="paymentType" onchange="renderCart()"><option>Cash</option><option>Bank</option><option>Credit</option></select></div>
-    <div class="field"><label>CUSTOMER PAID</label><input id="received" type="number" min="0" value="0" placeholder="e.g. 2000" oninput="renderCart()"></div>
+    <div class="field"><label>CUSTOMER PAID <span class="itco-optional">OPTIONAL</span></label><input id="received" type="number" min="0" value="" placeholder="Leave blank if unpaid" oninput="renderCart()"></div>
    </div>
    <div id="billSummary" style="margin-top:14px"></div>
    <button class="btn btn-success" style="width:100%;margin-top:12px;padding:13px" onclick="completeSale()">Complete Sale & Print</button>
@@ -245,11 +298,11 @@ html,body{max-width:100%;overflow-x:hidden}
 <section id="view-products" class="view">
  <div class="grid two"><div class="card"><div class="section-title"><h3>Add / Update Product</h3></div>
   <div class="form-grid">
-   <div class="field"><label>BARCODE</label><input id="pBarcode"></div><div class="field"><label>PRODUCT NAME</label><input id="pName"></div>
+   <div class="field"><label>BARCODE</label><div class="itco-input-action"><input id="pBarcode"><button class="btn btn-gold" type="button" onclick="itcoOpenScanner('product')">📷</button></div></div><div class="field"><label>PRODUCT NAME</label><input id="pName"></div>
    <div class="field"><label>CATEGORY</label><input id="pCategory" placeholder="Cosmetics"></div><div class="field"><label>SUPPLIER</label><input id="pSupplier"></div>
    <div class="field"><label>COST PRICE</label><input id="pCost" type="number"></div><div class="field"><label>WHOLESALE PRICE</label><input id="pWholesale" type="number"></div>
    <div class="field"><label>RETAIL PRICE</label><input id="pRetail" type="number"></div><div class="field"><label>OPENING / ADD STOCK</label><input id="pStock" type="number"></div>
-   <div class="field"><label>MINIMUM STOCK</label><input id="pMin" type="number" value="5"></div>
+   <div class="field"><label>MINIMUM STOCK</label><input id="pMin" type="number" value="5"></div><div class="field full"><label>PRODUCT PICTURE</label><div class="itco-photo-row"><input id="pPhoto" type="file" accept="image/*" capture="environment" onchange="itcoReadProductPhoto(this)"><button class="btn btn-light" type="button" onclick="document.getElementById('pPhoto').click()">📷 Take Photo</button></div><div id="pPhotoPreview" class="itco-photo-preview"></div></div>
   </div><div class="actions"><button class="btn btn-light" onclick="productFormReset()">Clear</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div>
  </div><div class="card"><div class="section-title"><h3>Inventory Summary</h3></div><div id="stockSummary"></div></div></div>
  <div class="card section"><div class="section-title"><h3>Products</h3><div class="toolbar"><input id="productSearch" placeholder="Search..." oninput="renderProducts()"></div></div><div class="table-wrap"><table class="table"><thead><tr><th>Barcode</th><th>Product</th><th>Category</th><th>Cost</th><th>Wholesale</th><th>Retail</th><th>Stock</th><th>Value</th><th></th></tr></thead><tbody id="productsTable"></tbody></table></div></div>
@@ -274,7 +327,7 @@ html,body{max-width:100%;overflow-x:hidden}
     <div class="section-title"><h3>Add Stock Only</h3><span class="badge b-blue">No new purchase amount</span></div>
     <p class="footer-note">Existing stock mein quantity add karo jab physical stock update karna ho. Is entry se purchase amount dobara add nahi hoga.</p>
     <div class="form-grid">
-      <div class="field"><label>PRODUCT</label><select id="stockOnlyProduct"></select></div>
+      <div class="field"><label>SEARCH PRODUCT</label><input id="stockOnlySearch" placeholder="Search name or barcode..." oninput="itcoFilterStockOnly()"><select id="stockOnlyProduct" style="margin-top:7px"></select></div>
       <div class="field"><label>QUANTITY TO ADD</label><input id="stockOnlyQty" type="number" min="1" value="1"></div>
     </div>
     <div class="actions"><button class="btn btn-primary" onclick="itcoAddStockOnly()">Add Quantity</button></div>
@@ -331,7 +384,7 @@ html,body{max-width:100%;overflow-x:hidden}
   <div class="card">
    <div class="section-title"><h3>Return / Refund</h3><span class="badge b-red">Stock comes back</span></div>
    <div class="form-grid">
-    <div class="field full"><label>INVOICE</label><select id="returnInvoice" onchange="itcoLoadReturnItems()"></select></div>
+    <div class="field full"><label>SEARCH INVOICE</label><input id="returnInvoiceSearch" placeholder="Invoice or customer..." oninput="itcoFilterReturnInvoices()"><select id="returnInvoice" onchange="itcoLoadReturnItems()" style="margin-top:7px"></select></div>
     <div class="field"><label>ITEM</label><select id="returnItem" onchange="itcoUpdateReturnInfo()"></select></div>
     <div class="field"><label>RETURN QTY</label><input id="returnQty" type="number" min="1" value="1"></div>
    </div>
@@ -347,6 +400,25 @@ html,body{max-width:100%;overflow-x:hidden}
 </section>
 
 </main>
+</div>
+
+
+<div id="itcoScannerModal" class="itco-scanner-modal" aria-hidden="true">
+  <div class="itco-scanner-box">
+    <div class="itco-scanner-head">
+      <div><b>📷 Scan Barcode</b><small>Point your phone camera at the barcode</small></div>
+      <button type="button" class="close" onclick="itcoCloseScanner()">✕</button>
+    </div>
+    <div class="itco-video-wrap">
+      <video id="itcoScannerVideo" playsinline muted></video>
+      <div class="itco-scan-frame"></div>
+    </div>
+    <div id="itcoScannerStatus" class="itco-scanner-status">Starting camera…</div>
+    <div class="itco-manual-scan">
+      <input id="itcoManualBarcode" inputmode="numeric" placeholder="Or type barcode manually">
+      <button class="btn btn-primary" type="button" onclick="itcoUseManualBarcode()">Use</button>
+    </div>
+  </div>
 </div>
 
 <div id="modalBg" class="modal-bg"><div class="modal"><div class="modal-head"><h2 id="modalTitle"></h2><button class="close" onclick="closeModal()">✕</button></div><div id="modalBody"></div></div></div>
@@ -955,6 +1027,242 @@ init();
     refreshStockOnlySelect();renderReturns();
     // Ask for PIN on the initial dashboard.
     setTimeout(function(){if(document.getElementById('view-dashboard')?.classList.contains('active'))window.showView('dashboard')},250);
+  },1200);
+})();
+</script>
+
+
+<script id="itco-ready-mobile-patch">
+(function(){
+  let pendingPhoto='';
+  let scanTarget='pos';
+  let scanStream=null;
+  let scanTimer=null;
+
+  function D(){return typeof db==='function'?db():{}}
+  function saveD(d){if(typeof save==='function')save(d)}
+  function esc2(x){return typeof esc==='function'?esc(x):String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+
+  /* Mobile drawer */
+  function wireMobileMenu(){
+    const t=document.getElementById('itcoSidebarToggle');
+    if(!t||t.dataset.easyMobile)return;
+    t.dataset.easyMobile='1';
+    t.addEventListener('click',function(){
+      if(window.innerWidth<=700){
+        document.body.classList.toggle('itco-mobile-menu-open');
+        t.textContent=document.body.classList.contains('itco-mobile-menu-open')?'✕':'☰';
+      }
+    },true);
+  }
+  document.addEventListener('click',function(ev){
+    const b=ev.target.closest('.nav button');
+    if(b&&window.innerWidth<=700)document.body.classList.remove('itco-mobile-menu-open');
+  });
+  setTimeout(wireMobileMenu,900);
+
+  /* PIN blur */
+  function watchPin(){
+    const m=document.getElementById('itcoPinModal');
+    if(!m||m.dataset.blurReady)return;
+    m.dataset.blurReady='1';
+    const sync=()=>document.body.classList.toggle('itco-pin-blur',m.classList.contains('open'));
+    new MutationObserver(sync).observe(m,{attributes:true,attributeFilter:['class']});
+    sync();
+  }
+  setTimeout(watchPin,700);
+  setInterval(watchPin,1500);
+
+  /* Discount percentage -> amount */
+  window.itcoSyncDiscount=function(){
+    const d=D(),type=document.getElementById('priceType')?.value||'retail';
+    const subtotal=(window.cart||[]).reduce((a,i)=>{
+      const p=(d.products||[]).find(x=>x.id===i.id);if(!p)return a;
+      return a+(Number(type==='wholesale'?p.wholesale:p.retail)||0)*Number(i.qty||0);
+    },0);
+    const pct=Math.min(100,Math.max(0,Number(document.getElementById('saleDiscountPct')?.value||0)));
+    const amount=Math.min(subtotal,subtotal*pct/100);
+    const amt=document.getElementById('saleDiscount');if(amt)amt.value=amount.toFixed(2);
+    const prev=document.getElementById('saleDiscountPreview');if(prev)prev.textContent=money(amount);
+    if(!window.__discountRendering&&typeof renderCart==='function'){
+      window.__discountRendering=true;
+      try{renderCart()}finally{window.__discountRendering=false}
+    }
+  };
+
+  /* Internal POS cart shows cost; customer receipt remains unchanged. */
+  const originalRenderCart=window.renderCart;
+  if(originalRenderCart&&!window.__itcoCartPatched){
+    window.__itcoCartPatched=true;
+    window.renderCart=function(){
+      originalRenderCart.apply(this,arguments);
+      const d=D(),type=document.getElementById('priceType')?.value||'retail';
+      const body=document.getElementById('cartBody');
+      if(body&&window.cart?.length){
+        body.innerHTML=window.cart.map((i,n)=>{
+          const p=(d.products||[]).find(x=>x.id===i.id);if(!p)return '';
+          const price=Number(type==='wholesale'?p.wholesale:p.retail||0);
+          return `<tr><td><b>${esc2(p.name)}</b><small class="itco-cost-note">Cost ${money(p.cost)}</small></td><td>${money(price)}</td><td><input style="width:55px;padding:5px" type="number" min="1" max="${p.stock}" value="${i.qty}" onchange="setQty(${n},this.value)"></td><td class="num">${money(price*i.qty)}</td><td><button class="btn btn-light" onclick="cart.splice(${n},1);renderCart()">✕</button></td></tr>`;
+        }).join('');
+        const th=document.querySelector('#view-pos #cartBody')?.closest('table')?.querySelector('thead');
+        if(th)th.innerHTML='<tr><th>Item / Cost</th><th>Price</th><th>Qty</th><th class="num">Total</th><th></th></tr>';
+      }
+      if(!window.__discountRendering)setTimeout(window.itcoSyncDiscount,0);
+    };
+  }
+
+  /* Blank customer-paid is allowed; it is treated as zero received. */
+  const originalComplete=window.completeSale;
+  if(originalComplete&&!window.__itcoCompletePatched){
+    window.__itcoCompletePatched=true;
+    window.completeSale=function(){
+      const r=document.getElementById('received');
+      if(r&&r.value==='')r.value='0';
+      return originalComplete.apply(this,arguments);
+    };
+  }
+
+  /* Product photo */
+  window.itcoReadProductPhoto=function(input){
+    const file=input?.files?.[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(){
+      pendingPhoto=reader.result;
+      const box=document.getElementById('pPhotoPreview');
+      if(box)box.innerHTML='<img src="'+pendingPhoto+'" alt="Product">';
+    };
+    reader.readAsDataURL(file);
+  };
+  const originalSaveProduct=window.saveProduct;
+  if(originalSaveProduct&&!window.__itcoSaveProductPatched){
+    window.__itcoSaveProductPatched=true;
+    window.saveProduct=function(){
+      const barcode=document.getElementById('pBarcode')?.value.trim();
+      const result=originalSaveProduct.apply(this,arguments);
+      if(pendingPhoto&&barcode){
+        const d=D(),p=(d.products||[]).find(x=>String(x.barcode)===barcode);
+        if(p){p.image=pendingPhoto;saveD(d)}
+      }
+      pendingPhoto='';
+      return result;
+    };
+  }
+
+  /* Stock-only search */
+  window.itcoFilterStockOnly=function(){
+    const q=(document.getElementById('stockOnlySearch')?.value||'').toLowerCase().trim();
+    const sel=document.getElementById('stockOnlyProduct');if(!sel)return;
+    const d=D(),old=sel.value;
+    sel.innerHTML=(d.products||[])
+      .filter(p=>!q||String(p.name).toLowerCase().includes(q)||String(p.barcode).toLowerCase().includes(q))
+      .map(p=>`<option value="${p.id}">${esc2(p.name)} (${p.stock})</option>`).join('');
+    if([...sel.options].some(o=>o.value===old))sel.value=old;
+  };
+  const oldStockRefresh=window.refreshStockOnlySelect;
+  if(oldStockRefresh&&!window.__itcoStockSearchPatched){
+    window.__itcoStockSearchPatched=true;
+    window.refreshStockOnlySelect=function(){oldStockRefresh.apply(this,arguments);itcoFilterStockOnly()};
+  }
+
+  /* Return invoice search */
+  window.itcoFilterReturnInvoices=function(){
+    const q=(document.getElementById('returnInvoiceSearch')?.value||'').toLowerCase().trim();
+    const sel=document.getElementById('returnInvoice');if(!sel)return;
+    const d=D(),old=sel.value;
+    sel.innerHTML='<option value="">Select invoice</option>'+(d.sales||[]).slice().reverse()
+      .filter(x=>!q||String(x.invoice).toLowerCase().includes(q)||String(x.customerName||'').toLowerCase().includes(q))
+      .map(x=>`<option value="${x.id}">${esc2(x.invoice)} — ${esc2(x.customerName)} — ${m(x.total)}</option>`).join('');
+    if([...sel.options].some(o=>o.value===old))sel.value=old;
+    if(typeof itcoLoadReturnItems==='function')itcoLoadReturnItems();
+  };
+  const oldReturnLoad=window.itcoLoadReturnInvoices;
+  if(oldReturnLoad&&!window.__itcoReturnSearchPatched){
+    window.__itcoReturnSearchPatched=true;
+    window.itcoLoadReturnInvoices=function(){oldReturnLoad.apply(this,arguments);setTimeout(itcoFilterReturnInvoices,0)};
+  }
+
+  /* Phone camera barcode scanner. Uses native BarcodeDetector when available, with manual fallback. */
+  async function stopScanner(){
+    if(scanTimer){clearInterval(scanTimer);scanTimer=null}
+    if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
+    const v=document.getElementById('itcoScannerVideo');if(v)v.srcObject=null;
+  }
+  window.itcoCloseScanner=async function(){
+    await stopScanner();
+    const modal=document.getElementById('itcoScannerModal');
+    if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true')}
+  };
+  function applyBarcode(code){
+    code=String(code||'').trim();if(!code)return;
+    if(scanTarget==='product'){
+      const el=document.getElementById('pBarcode');if(el)el.value=code;
+    }else{
+      const el=document.getElementById('posSearch');if(el){el.value=code;scanPOSBarcode()}
+    }
+    itcoCloseScanner();
+  }
+  window.itcoUseManualBarcode=function(){
+    const code=document.getElementById('itcoManualBarcode')?.value.trim();
+    if(code)applyBarcode(code);
+  };
+  window.itcoOpenScanner=async function(target){
+    scanTarget=target||'pos';
+    const modal=document.getElementById('itcoScannerModal');
+    const video=document.getElementById('itcoScannerVideo');
+    const status=document.getElementById('itcoScannerStatus');
+    if(!modal||!video)return;
+    modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+    document.getElementById('itcoManualBarcode').value='';
+    status.textContent='Starting camera…';
+    if(!navigator.mediaDevices?.getUserMedia){
+      status.textContent='Camera is not available here. Enter barcode manually below.';
+      return;
+    }
+    try{
+      scanStream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},
+        audio:false
+      });
+      video.srcObject=scanStream;await video.play();
+      if(!('BarcodeDetector' in window)){
+        status.textContent='Camera is on, but live barcode detection is not supported by this browser. Use the barcode field below.';
+        return;
+      }
+      const detector=new BarcodeDetector({
+        formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','codabar','qr_code']
+      });
+      status.textContent='Camera ready — hold the barcode inside the frame.';
+      let busy=false;
+      scanTimer=setInterval(async()=>{
+        if(busy||video.readyState<2)return;
+        busy=true;
+        try{
+          const codes=await detector.detect(video);
+          if(codes?.length&&codes[0].rawValue)applyBarcode(codes[0].rawValue);
+        }catch(e){}finally{busy=false}
+      },180);
+    }catch(e){
+      status.textContent='Camera permission denied/unavailable. Allow camera access, or enter the barcode manually.';
+    }
+  };
+
+  /* Clear photo state with product form reset. */
+  const oldReset=window.productFormReset;
+  if(oldReset&&!window.__itcoResetPatched){
+    window.__itcoResetPatched=true;
+    window.productFormReset=function(){
+      oldReset.apply(this,arguments);
+      pendingPhoto='';
+      const box=document.getElementById('pPhotoPreview');if(box)box.innerHTML='';
+      const f=document.getElementById('pPhoto');if(f)f.value='';
+    };
+  }
+
+  setTimeout(function(){
+    if(typeof itcoFilterStockOnly==='function')itcoFilterStockOnly();
+    if(typeof itcoFilterReturnInvoices==='function')itcoFilterReturnInvoices();
+    if(typeof itcoSyncDiscount==='function')itcoSyncDiscount();
+    wireMobileMenu();watchPin();
   },1200);
 })();
 </script>
