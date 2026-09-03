@@ -93,7 +93,7 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
   </div>
 </aside>
 
-<main class="main">
+<div class="mobile-nav-backdrop" id="mobileNavBackdrop" onclick="toggleMobileNav(false)"></div><button class="mobile-menu-btn no-print" onclick="toggleMobileNav()">☰</button><main class="main">
 <div class="top"><div><h1 id="pageTitle">Business Dashboard</h1><p id="todayText"></p></div><div class="top-actions no-print"><button class="btn btn-light" onclick="showView('closing')">Daily Closing</button><button class="btn btn-primary" onclick="showView('pos')">+ New Sale</button></div></div>
 
 <section id="view-dashboard" class="view active">
@@ -122,25 +122,39 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
 </section>
 
 <section id="view-pos" class="view">
- <div class="grid pos-grid">
-  <div class="card">
-   <div class="section-title"><h3>Create New Invoice</h3><span id="invoiceNo" class="badge b-blue"></span></div>
-   <div class="product-search"><input id="posSearch" placeholder="Search product or SCAN barcode..." onkeydown="if(event.key==='Enter')scanPOSBarcode()" oninput="renderPOSProducts()"><button class="btn btn-primary" onclick="focusPos()">Search</button><button class="btn btn-light itco-camera-btn" onclick="openITCOCameraScanner('pos')">📷 Camera Scan</button></div>
-   <div id="posProducts" class="quick"></div>
-   <div class="section table-wrap"><table class="table"><thead><tr><th>Item</th><th>Price</th><th>Qty</th><th class="num">Total</th><th></th></tr></thead><tbody id="cartBody"></tbody></table></div>
+ <div class="invoice-shell">
+  <div class="invoice-head">
+   <div><div class="eyebrow">POINT OF SALE</div><h2>New Invoice</h2><p>Scan products one by one and complete the bill in two simple steps.</p></div>
+   <span id="invoiceNo" class="badge b-blue"></span>
   </div>
-  <div class="card">
-   <div class="section-title"><h3>Bill Summary</h3></div>
-   <div class="field"><label>CUSTOMER</label><select id="saleCustomer"></select></div>
-   <div class="form-grid" style="margin-top:10px">
-    <div class="field"><label>PRICE TYPE</label><select id="priceType" onchange="renderCart()"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select></div>
-    <div class="field"><label>DISCOUNT</label><input id="saleDiscount" type="number" min="0" value="0" oninput="renderCart()"></div>
-    <div class="field"><label>PAYMENT</label><select id="paymentType" onchange="renderCart()"><option>Cash</option><option>Bank</option><option>Credit</option></select></div>
-    <div class="field"><label>CUSTOMER PAID</label><input id="received" type="number" min="0" value="0" placeholder="e.g. 2000" oninput="renderCart()"></div>
+  <div class="invoice-steps"><div id="invoiceStep1" class="invoice-step active"><span>1</span><b>Products</b></div><div class="step-line"></div><div id="invoiceStep2" class="invoice-step"><span>2</span><b>Payment & Save</b></div></div>
+
+  <div id="invoicePanel1" class="invoice-panel active">
+   <div class="scan-hero">
+    <div class="scan-hero-copy"><div class="eyebrow">FAST CHECKOUT</div><h3>Scan or add products</h3><p>On phone, use Camera Scan only. Each scan adds <b>1 unit</b>.</p></div>
+    <div class="product-search"><input id="posSearch" placeholder="Search product or scan barcode..." onkeydown="if(event.key==='Enter')scanPOSBarcode()" oninput="renderPOSProducts()"><button class="btn btn-primary pos-search-btn" onclick="focusPos()">Search</button><button class="btn btn-primary itco-camera-btn" onclick="openITCOCameraScanner('pos')">📷 <span>Camera Scan</span></button></div>
    </div>
-   <div id="billSummary" style="margin-top:14px"></div>
-   <button class="btn btn-success" style="width:100%;margin-top:12px;padding:13px" onclick="completeSale()">Complete Sale & Print</button>
-   <button class="btn btn-light" style="width:100%;margin-top:8px" onclick="clearCart()">Clear Cart</button>
+   <div id="posProducts" class="quick"></div>
+   <div class="cart-card"><div class="section-title"><h3>Invoice Items</h3><span id="cartCount" class="badge b-blue">0 items</span></div><div class="table-wrap"><table class="table"><thead><tr><th>Item</th><th>Price</th><th>Qty</th><th class="num">Total</th><th></th></tr></thead><tbody id="cartBody"></tbody></table></div></div>
+   <div class="invoice-bottom-bar"><div><small>Current Total</small><strong id="invoiceProductsTotal">Rs. 0</strong></div><button class="btn btn-primary invoice-next" onclick="nextInvoiceStep()">Next: Customer & Payment →</button></div>
+  </div>
+
+  <div id="invoicePanel2" class="invoice-panel">
+   <div class="payment-layout">
+    <div class="payment-card">
+     <div class="section-title"><div><div class="eyebrow">STEP 2</div><h3>Customer & Payment</h3></div><span class="badge b-blue">Checkout</span></div>
+     <div class="form-grid">
+      <div class="field full"><label>CUSTOMER</label><select id="saleCustomer"></select></div>
+      <div class="field"><label>PRICE TYPE</label><select id="priceType" onchange="renderCart()"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select></div>
+      <div class="field"><label>DISCOUNT</label><input id="saleDiscount" type="number" min="0" value="0" oninput="renderCart()"></div>
+      <div class="field"><label>PAYMENT METHOD</label><select id="paymentType" onchange="renderCart()"><option>Cash</option><option>Bank</option><option>Credit</option></select></div>
+      <div class="field"><label>CUSTOMER PAID</label><input id="received" type="number" min="0" value="0" inputmode="decimal" placeholder="e.g. 2000" oninput="renderCart()"></div>
+     </div>
+     <div id="billSummary" class="checkout-summary"></div>
+    </div>
+    <div class="invoice-preview-card"><div class="section-title"><h3>Invoice Preview</h3><span class="badge b-blue">Customer Copy</span></div><div id="invoicePreview"></div></div>
+   </div>
+   <div class="invoice-actions"><button class="btn btn-light" onclick="backToProducts()">← Back to Products</button><button class="btn btn-primary save-print-btn" onclick="completeSale()">✓ Save & Print Invoice</button></div>
   </div>
  </div>
 </section>
@@ -312,10 +326,16 @@ function saveOpeningCash(){let d=db(),ds=document.getElementById('openingCashDat
 function focusPos(){document.getElementById('posSearch').focus()}
 function renderPOSProducts(){let q=(document.getElementById('posSearch')?.value||'').toLowerCase(),d=db();let p=d.products.filter(x=>!q||x.name.toLowerCase().includes(q)||x.barcode.toLowerCase().includes(q)).filter(x=>x.stock>0).slice(0,18);document.getElementById('posProducts').innerHTML=p.length?p.map(x=>`<button onclick="addCart('${x.id}')"><b>${esc(x.name)}</b><small>${money(x.retail)} · Stock ${x.stock}</small></button>`).join(''):'<div class="empty">No matching products in stock.</div>'}
 function addCart(pid){let p=db().products.find(x=>x.id===pid);if(!p)return;let x=cart.find(i=>i.id===pid);if(x){if(x.qty>=p.stock)return alert('Stock limit reached.');x.qty++}else cart.push({id:p.id,qty:1});renderCart()}
-function renderCart(){let d=db(),type=document.getElementById('priceType')?.value||'retail';let body=document.getElementById('cartBody');if(!body)return;body.innerHTML=cart.length?cart.map((i,n)=>{let p=d.products.find(x=>x.id===i.id);let price=type==='wholesale'?p.wholesale:p.retail;return `<tr><td>${esc(p.name)}</td><td>${money(price)}</td><td><input style="width:55px;padding:5px" type="number" min="1" max="${p.stock}" value="${i.qty}" onchange="setQty(${n},this.value)"></td><td class="num">${money(price*i.qty)}</td><td><button class="btn btn-light" onclick="cart.splice(${n},1);renderCart()">✕</button></td></tr>`}).join(''):'<tr><td colspan="5" class="empty">Cart is empty. Search/select products above.</td></tr>';
- let subtotal=sum(cart,i=>{let p=d.products.find(x=>x.id===i.id);return (type==='wholesale'?p.wholesale:p.retail)*i.qty}),discount=Number(document.getElementById('saleDiscount')?.value||0),total=Math.max(0,subtotal-discount),received=Number(document.getElementById('received')?.value||0),payment=document.getElementById('paymentType')?.value||'Cash',due=payment==='Credit'?total:Math.max(0,total-received),change=payment==='Cash'?Math.max(0,received-total):0;
- document.getElementById('billSummary').innerHTML=`<div class="summary-row"><span>Subtotal</span><b>${money(subtotal)}</b></div><div class="summary-row"><span>Discount</span><b class="red">− ${money(discount)}</b></div><div class="summary-row total"><span>TOTAL</span><span>${money(total)}</span></div><div class="summary-row"><span>${payment==='Credit'?'Due':'CHANGE / WAPAS (YOUR SIDE)'}</span><b class="${change>0?'green':''}">${money(payment==='Credit'?due:change)}</b></div>`;
+function renderCart(){
+ let d=db(),type=document.getElementById('priceType')?.value||'retail',body=document.getElementById('cartBody');if(!body)return;
+ body.innerHTML=cart.length?cart.map((i,n)=>{let p=d.products.find(x=>x.id===i.id);if(!p)return '';let price=type==='wholesale'?p.wholesale:p.retail;return `<tr><td><b>${esc(p.name)}</b><small class="cart-barcode">${esc(p.barcode)}</small></td><td>${money(price)}</td><td><div class="qty-control"><button onclick="setQty(${n},${i.qty-1})">−</button><b>${i.qty}</b><button onclick="setQty(${n},${i.qty+1})">+</button></div></td><td class="num">${money(price*i.qty)}</td><td><button class="btn btn-light" onclick="cart.splice(${n},1);renderCart()">✕</button></td></tr>`}).join(''):'<tr><td colspan="5" class="empty">No products added yet. Scan a barcode to add 1 unit.</td></tr>';
+ let subtotal=sum(cart,i=>{let p=d.products.find(x=>x.id===i.id);return p?(type==='wholesale'?p.wholesale:p.retail)*i.qty:0}),discount=Number(document.getElementById('saleDiscount')?.value||0),total=Math.max(0,subtotal-discount),received=Number(document.getElementById('received')?.value||0),payment=document.getElementById('paymentType')?.value||'Cash',due=payment==='Credit'?total:Math.max(0,total-received),change=payment==='Cash'?Math.max(0,received-total):0;
+ let count=sum(cart,i=>i.qty);if(document.getElementById('cartCount'))document.getElementById('cartCount').textContent=count+' unit'+(count===1?'':'s');if(document.getElementById('invoiceProductsTotal'))document.getElementById('invoiceProductsTotal').textContent=money(total);
+ if(document.getElementById('billSummary'))document.getElementById('billSummary').innerHTML=`<div class="summary-row"><span>Subtotal</span><b>${money(subtotal)}</b></div><div class="summary-row"><span>Discount</span><b class="red">− ${money(discount)}</b></div><div class="summary-row total"><span>TOTAL</span><span>${money(total)}</span></div><div class="cash-highlight"><span>${payment==='Credit'?'AMOUNT DUE':'CHANGE / WAPAS'}</span><b>${money(payment==='Credit'?due:change)}</b></div>`;
+ let prev=document.getElementById('invoicePreview');if(prev)prev.innerHTML=cart.length?cart.map(i=>{let p=d.products.find(x=>x.id===i.id);let price=type==='wholesale'?p.wholesale:p.retail;return `<div class="preview-row"><span>${esc(p.name)} × ${i.qty}</span><b>${money(price*i.qty)}</b></div>`}).join('')+`<div class="preview-total"><span>Total</span><b>${money(total)}</b></div>`:'<div class="empty">Add products first.</div>';
 }
+function nextInvoiceStep(){if(!cart.length)return alert('Please scan/add at least one product first.');document.getElementById('invoicePanel1').classList.remove('active');document.getElementById('invoicePanel2').classList.add('active');document.getElementById('invoiceStep1').classList.remove('active');document.getElementById('invoiceStep2').classList.add('active');renderCart();setTimeout(()=>document.getElementById('received')?.focus(),120)}
+function backToProducts(){document.getElementById('invoicePanel2').classList.remove('active');document.getElementById('invoicePanel1').classList.add('active');document.getElementById('invoiceStep2').classList.remove('active');document.getElementById('invoiceStep1').classList.add('active')}
 function setQty(n,v){let d=db(),p=d.products.find(x=>x.id===cart[n].id);cart[n].qty=Math.max(1,Math.min(Number(v),p.stock));renderCart()}
 function clearCart(){cart=[];document.getElementById('received').value=0;document.getElementById('saleDiscount').value=0;renderCart()}
 function completeSale(){
@@ -327,7 +347,13 @@ function completeSale(){
  d.sales.push({id:id(),invoice,date:now(),customerId:customer,customerName:cu?cu.name:'Walk-in Customer',items,subtotal,discount,total,payment:pay,paid,due,paymentReceived:received,changeGiven:pay==='Cash'?Math.max(0,received-total):0});
  save(d);printInvoice(d.sales.at(-1));clearCart();document.getElementById('invoiceNo').textContent='INV-'+today().replaceAll('-','')+'-'+String(d.sales.length+1).padStart(3,'0');renderAll()
 }
-function printInvoice(s){let w=window.open('','_blank','width=420,height=650');if(!w){alert('Please allow popups to print invoice.');return}w.document.write(`<html><head><title>${s.invoice}</title><style>body{font-family:Arial;width:320px;margin:20px auto;font-size:12px}h2{text-align:center;margin:4px}.line{border-top:1px dashed #000;margin:8px 0}table{width:100%;border-collapse:collapse}td{padding:4px 0}td:last-child{text-align:right}.total{font-size:16px;font-weight:bold}</style></head><body><h2>ITCO</h2><div style="text-align:center;font-weight:bold">Levon Fairever</div><div style="text-align:center">${s.invoice}<br>${fmtDate(s.date)}<br>${esc(s.customerName)}</div><div class="line"></div><table>${s.items.map(i=>`<tr><td>${esc(i.name)} × ${i.qty}</td><td>${money(i.price*i.qty)}</td></tr>`).join('')}</table><div class="line"></div><div>Subtotal <span style="float:right">${money(s.subtotal)}</span></div><div>Discount <span style="float:right">${money(s.discount)}</span></div><p class="total">TOTAL <span style="float:right">${money(s.total)}</span></p><div class="line"></div>
+function printInvoice(s){let w=window.open('','_blank','width=420,height=650');if(!w){alert('Please allow popups to print invoice.');return}w.document.write(`<html><head><title>${s.invoice}</title><style>body{font-family:Arial;width:320px;margin:20px auto;font-size:12px}h2{text-align:center;margin:4px}.line{border-top:1px dashed #000;margin:8px 0}table{width:100%;border-collapse:collapse}td{padding:4px 0}td:last-child{text-align:right}.total{font-size:16px;font-weight:bold}
+.invoice-shell{max-width:1180px;margin:0 auto}.invoice-head{display:flex;justify-content:space-between;align-items:flex-start;padding:4px 2px 18px}.invoice-head h2{margin:3px 0;font-size:28px}.invoice-head p{margin:0;color:var(--muted)}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;color:var(--primary);text-transform:uppercase}.invoice-steps{display:flex;align-items:center;max-width:560px;margin:0 auto 18px}.invoice-step{display:flex;align-items:center;gap:8px;color:#8aa0b7;font-size:13px}.invoice-step span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#edf3fa;font-weight:800}.invoice-step.active{color:#0b4fb3}.invoice-step.active span{background:#1769e0;color:#fff;box-shadow:0 5px 15px rgba(23,105,224,.25)}.step-line{height:1px;background:#dbe5f0;flex:1;margin:0 12px}.invoice-panel{display:none}.invoice-panel.active{display:block;animation:invoiceFade .2s ease}.scan-hero{background:linear-gradient(135deg,#f7fbff,#eef5ff);border:1px solid #dbe8f6;border-radius:18px;padding:18px;display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:14px}.scan-hero h3{margin:4px 0}.scan-hero p{margin:4px 0 0;color:var(--muted);font-size:13px}.scan-hero .product-search{margin:0;min-width:52%;}.cart-card{background:#fff;border:1px solid #dbe5f0;border-radius:16px;overflow:hidden}.cart-card .section-title{padding:15px 18px}.cart-barcode{display:block;color:#8aa0b7;font-size:10px;margin-top:3px}.qty-control{display:inline-flex;align-items:center;border:1px solid #dbe5f0;border-radius:9px;overflow:hidden}.qty-control button{border:0;background:#f4f8fc;padding:5px 9px;color:#1769e0;font-weight:800;cursor:pointer}.qty-control b{min-width:28px;text-align:center}.invoice-bottom-bar{margin-top:14px;background:#fff;border:1px solid #dbe5f0;border-radius:16px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 25px rgba(21,65,110,.05)}.invoice-bottom-bar small{display:block;color:var(--muted)}.invoice-bottom-bar strong{font-size:21px}.invoice-next{padding:12px 18px}.payment-layout{display:grid;grid-template-columns:1fr .8fr;gap:16px}.payment-card,.invoice-preview-card{background:#fff;border:1px solid #dbe5f0;border-radius:16px;padding:18px}.checkout-summary{margin-top:14px}.cash-highlight{margin-top:12px;border-radius:14px;background:#eaf3ff;padding:14px;display:flex;justify-content:space-between;align-items:center;color:#0b4fb3}.cash-highlight b{font-size:23px}.preview-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #edf2f7;font-size:13px}.preview-total{display:flex;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:2px solid #dbe5f0;font-size:18px;font-weight:800}.invoice-actions{display:flex;justify-content:space-between;gap:12px;margin-top:16px}.save-print-btn{padding:13px 24px}.scan-missing{text-align:center}.missing-icon{font-size:36px}.scan-missing h3{margin:5px 0}.scan-missing p{color:var(--muted);font-size:13px}.mobile-menu-btn,.mobile-nav-backdrop{display:none}
+@keyframes invoiceFade{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(max-width:900px){.scan-hero{align-items:stretch;flex-direction:column}.scan-hero .product-search{min-width:0}.payment-layout{grid-template-columns:1fr}}
+@media(max-width:700px){body{padding-bottom:0}.sidebar{width:270px!important;max-width:82vw!important;transform:translateX(-105%);transition:transform .22s ease;z-index:100001;padding:16px!important;box-shadow:18px 0 45px rgba(15,50,90,.18)!important}.sidebar.mobile-open{transform:translateX(0)}.brand div:not(.brand-icon),.nav-label,.nav button span{display:block}.brand{padding:8px!important;border:0}.nav button{text-align:left!important;padding:12px 13px!important}.nav button span{display:inline!important}.main{margin-left:0!important;width:100%!important;padding:68px 12px 18px!important}.top{position:fixed!important;top:0;left:0;right:0;z-index:1000;height:58px;padding:8px 12px 8px 58px!important}.top h1{font-size:16px!important}.top p{display:none}.top-actions{display:none}.mobile-menu-btn{display:grid;place-items:center;position:fixed;top:10px;left:10px;width:38px;height:38px;z-index:100003;border:1px solid #cbd8e6;border-radius:10px;background:#fff;color:#1769e0;font-size:20px;box-shadow:0 5px 15px rgba(15,50,90,.1)}.mobile-nav-backdrop.show{display:block;position:fixed;inset:0;background:rgba(8,25,45,.32);z-index:100000}.invoice-head{padding-top:0}.invoice-head h2{font-size:22px}.invoice-head p{font-size:12px}.invoice-steps{margin-bottom:12px}.invoice-step b{font-size:11px}.scan-hero{padding:14px;border-radius:14px}.scan-hero .product-search{display:grid;grid-template-columns:1fr;gap:8px}.scan-hero .product-search input,.scan-hero .pos-search-btn{display:none}.itco-camera-btn{width:100%!important;margin-left:0!important;min-height:48px;font-size:15px}.itco-camera-btn span{display:inline}.quick{grid-template-columns:repeat(2,1fr)!important}.cart-card{overflow-x:auto}.cart-card table{min-width:560px}.invoice-bottom-bar{position:sticky;bottom:8px;z-index:5;padding:10px}.invoice-next{font-size:12px;padding:11px 12px}.payment-card,.invoice-preview-card{padding:14px}.invoice-actions{position:sticky;bottom:0;background:#f4f7fb;padding:10px 0}.save-print-btn{flex:1}.invoice-actions .btn-light{min-width:105px}.itco-scan-box{width:96vw;border-radius:18px}.itco-scan-foot{font-size:11px;flex-direction:column;align-items:flex-start}.itco-video-wrap{aspect-ratio:3/4}.form-grid{grid-template-columns:1fr!important}}
+@media(min-width:701px){#posSearch{display:block!important}}
+</style></head><body><h2>ITCO</h2><div style="text-align:center;font-weight:bold">Levon Fairever</div><div style="text-align:center">${s.invoice}<br>${fmtDate(s.date)}<br>${esc(s.customerName)}</div><div class="line"></div><table>${s.items.map(i=>`<tr><td>${esc(i.name)} × ${i.qty}</td><td>${money(i.price*i.qty)}</td></tr>`).join('')}</table><div class="line"></div><div>Subtotal <span style="float:right">${money(s.subtotal)}</span></div><div>Discount <span style="float:right">${money(s.discount)}</span></div><p class="total">TOTAL <span style="float:right">${money(s.total)}</span></p><div class="line"></div>
 <div style="text-align:center;line-height:1.5;margin-top:10px">
  <b>13 Madina Market, New Bazar, Kasur</b><br>
  03226471317 &nbsp; | &nbsp; 03218402768
@@ -458,31 +484,10 @@ function renderReports(){let p=document.getElementById('reportPeriod')?.value||'
 function saleCostTotal(ss){return sum(ss,s=>saleCost(s))}
 function openModal(title,body){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modalBg').classList.add('show')}
 function closeModal(){document.getElementById('modalBg').classList.remove('show')}
-function scanPOSBarcode(){
- let q=document.getElementById('posSearch').value.trim();if(!q)return;
- let p=db().products.find(x=>String(x.barcode)===String(q));
- if(p){
-   if(Number(p.stock)<=0){
-     pendingPOSBarcode=q;
-     openModal('Product Out of Stock',`<div class="alert">This barcode is already registered but <b>${esc(p.name)}</b> has <b>0 stock</b>.</div><div class="actions"><button class="btn btn-light" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addStockFromPOS('${esc(p.id)}')">Add Stock</button></div>`);
-     return;
-   }
-   addCart(p.id);document.getElementById('posSearch').value='';renderPOSProducts();document.getElementById('posSearch').focus();return;
- }
- pendingPOSBarcode=q;
- openModal('Product Not Found',`<div class="alert"><b>Barcode:</b> ${esc(q)}<br>This product is not in your stock database yet.</div><p style="color:var(--muted);margin:12px 0 4px">Add the product once, enter its stock and prices, then ITCO will return to this bill and add <b>1 unit</b> automatically.</p><div class="actions"><button class="btn btn-light" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addMissingProductFromPOS()">＋ Add Product</button></div>`);
-}
-function addMissingProductFromPOS(){
- const bc=pendingPOSBarcode;closeModal();showView('products');
- document.getElementById('pBarcode').value=bc||'';
- document.getElementById('pName').focus();
- const st=document.getElementById('productLookupStatus');if(st)st.innerHTML='<div class="alert" style="margin-top:10px">New barcode ready. Enter product name, prices and <b>Opening / Add Stock</b>. Save Product ke baad ITCO wapas POS par aayega.</div>';
-}
-function addStockFromPOS(pid){
- closeModal();showView('products');editProduct(pid);
- const st=document.getElementById('productLookupStatus');if(st)st.innerHTML='<div class="alert" style="margin-top:10px">Add stock for this product. Save Product ke baad ITCO wapas POS par aayega.</div>';
- pendingPOSBarcode=document.getElementById('pBarcode').value.trim();
- document.getElementById('pStock').focus();
+function isPhoneDevice(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)}
+function scanPOSBarcode(){let q=document.getElementById('posSearch')?.value.trim();if(!q)return;let p=db().products.find(x=>String(x.barcode)===String(q));if(p){addCart(p.id);let input=document.getElementById('posSearch');if(input)input.value='';renderPOSProducts();if(!isPhoneDevice()&&!window.ITCO_CAMERA_ACTIVE){input?.focus()}}else{openNewProductFromScan(q,'pos')}}
+function openNewProductFromScan(barcode,target){openModal('Product not found',`<div class="scan-missing"><div class="missing-icon">📦</div><h3>Barcode not in stock</h3><p>Barcode <b>${esc(barcode)}</b> is not saved. Add the product now and continue the invoice.</p><div class="form-grid"><div class="field full"><label>BARCODE</label><input id="scanNewBarcode" value="${esc(barcode)}" readonly></div><div class="field full"><label>PRODUCT NAME</label><input id="scanNewName" placeholder="e.g. Vitamin C Serum"></div><div class="field"><label>CATEGORY</label><input id="scanNewCategory" placeholder="Cosmetics"></div><div class="field"><label>SUPPLIER</label><input id="scanNewSupplier" placeholder="Supplier"></div><div class="field"><label>COST PRICE</label><input id="scanNewCost" type="number" min="0"></div><div class="field"><label>WHOLESALE PRICE</label><input id="scanNewWholesale" type="number" min="0"></div><div class="field"><label>RETAIL PRICE</label><input id="scanNewRetail" type="number" min="0"></div><div class="field"><label>OPENING STOCK</label><input id="scanNewStock" type="number" min="1" value="1"></div></div><div class="actions"><button class="btn btn-light" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveScannedNewProduct('${esc(target)}')">Save Product & Add 1</button></div></div>`)}
+function saveScannedNewProduct(target){let d=db(),barcode=document.getElementById('scanNewBarcode').value.trim(),name=document.getElementById('scanNewName').value.trim(),stock=Number(document.getElementById('scanNewStock').value||0);if(!barcode||!name)return alert('Barcode and product name are required.');if(stock<1)return alert('Opening stock must be at least 1.');if(d.products.some(p=>String(p.barcode)===String(barcode)))return alert('This barcode already exists.');let p={id:id(),barcode,name,category:document.getElementById('scanNewCategory').value||'General',supplier:document.getElementById('scanNewSupplier').value||'',cost:Number(document.getElementById('scanNewCost').value||0),wholesale:Number(document.getElementById('scanNewWholesale').value||0),retail:Number(document.getElementById('scanNewRetail').value||0),stock,min:5};d.products.push(p);save(d);closeModal();if(target==='pos'){cart.push({id:p.id,qty:1});renderAll();showView('pos');}else{renderAll();showView('products')}
 }
 function testScanner(){let v=document.getElementById('scannerTest').value.trim();document.getElementById('scannerStatus').innerHTML=v?`<div class="alert" style="margin-top:10px">Scanner received: <b>${esc(v)}</b></div>`:'<div class="alert" style="margin-top:10px">No barcode received. Check scanner/USB connection.</div>'}
 function testPrint(){printInvoice({invoice:'TEST-0001',date:now(),customerName:'Printer Test',items:[{name:'ITCO Test Item',qty:1,price:100,cost:60}],subtotal:100,discount:0,total:100,paid:100,due:0})}
@@ -492,6 +497,7 @@ function setClosingPeriod(p){let [start,end]=periodRange(p),d=db(),ss=salesInRan
 function backupData(){let blob=new Blob([JSON.stringify(db(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='shopledger-backup-'+today()+'.json';a.click()}
 function restoreData(){let i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>{let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.products||!x.sales)throw 0;save(x);renderAll();alert('Backup restored.')}catch(e){alert('Invalid backup file.')}};r.readAsText(i.files[0])};i.click()}
 function clearData(){if(confirm('This will permanently erase all shop data from this browser. Continue?')){localStorage.removeItem(KEY);location.reload()}}
+window.toggleMobileNav=function(force){let side=document.querySelector('.sidebar');if(!side)return;let open=typeof force==='boolean'?force:!side.classList.contains('mobile-open');side.classList.toggle('mobile-open',open);document.getElementById('mobileNavBackdrop')?.classList.toggle('show',open)};
 init();
 </script>
 
@@ -558,7 +564,7 @@ init();
 (function(){
 let stream=null, timer=null, mode='pos', detector=null, busy=false, scanLocked=false, lastDetectedAt=0;
 window.openITCOCameraScanner=async function(target){
- mode=target||'pos'; scanLocked=false; lastDetectedAt=0;
+ mode=target||'pos'; scanLocked=false; lastDetectedAt=0; window.ITCO_CAMERA_ACTIVE=true;
  const modal=document.getElementById('itcoScannerModal'), video=document.getElementById('itcoScanVideo'), status=document.getElementById('itcoScanStatus');
  modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); status.innerHTML='Starting scanner…';
  // Median native barcode scanner: preferred on Android/iOS app.
@@ -610,7 +616,7 @@ window.itcoOpenAppSettings=function(){
  const st=document.getElementById('itcoScanStatus'); if(st) st.textContent=statusText;
 };
 window.closeITCOCameraScanner=function(){
- scanLocked=false;lastDetectedAt=0;if(timer)clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ window.ITCO_CAMERA_ACTIVE=false; if(document.activeElement&&document.activeElement.blur)document.activeElement.blur(); scanLocked=false;lastDetectedAt=0;if(timer)clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
  const v=document.getElementById('itcoScanVideo');if(v)v.srcObject=null;
  const m=document.getElementById('itcoScannerModal');m.classList.remove('show');m.setAttribute('aria-hidden','true');
 };
