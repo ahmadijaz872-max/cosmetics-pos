@@ -11,6 +11,8 @@
 @media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.two,.pos-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.sidebar{width:70px;padding:12px 8px}.brand div:not(.brand-icon),.nav-label,.nav button span{display:none}.brand{padding:6px;border:0}.nav button{text-align:center}.main{margin-left:70px;width:calc(100% - 70px);padding:15px}.cards,.three{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
 @media print{.sidebar,.top,.no-print{display:none!important}.main{margin:0;width:100%;padding:0}.print-only{display:block}.view:not(#view-reports){display:none!important}}
+
+.itco-permission-btn{margin-left:8px;border:0;border-radius:8px;padding:7px 10px;background:#1769d1;color:#fff;font-weight:700;cursor:pointer}
 </style>
 
 
@@ -510,11 +512,25 @@ let stream=null, timer=null, mode='pos', detector=null, busy=false;
 window.openITCOCameraScanner=async function(target){
  mode=target||'pos';
  const modal=document.getElementById('itcoScannerModal'), video=document.getElementById('itcoScanVideo'), status=document.getElementById('itcoScanStatus');
- modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); status.textContent='Starting camera…';
+ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); status.innerHTML='Starting scanner…';
+ // Median native barcode scanner: preferred on Android/iOS app.
+ try{
+   if(window.median && median.barcode && typeof median.barcode.scan==='function'){
+     status.textContent='Opening native camera…';
+     const result=await median.barcode.scan({formats:['EAN_13','EAN_8','UPC_A','UPC_E','CODE_128','CODE_39','CODE_93','ITF','CODABAR','QR_CODE']});
+     if(result && result.success && result.code){ handleITCOScan(result.code); closeITCOCameraScanner(); }
+     else if(result && result.error){ status.textContent='Scanner: '+result.error; }
+     else status.textContent='No barcode scanned.';
+     return;
+   }
+ }catch(e){
+   console.warn('Median native scanner unavailable:',e);
+ }
+ // Web camera fallback for Chrome/HTTPS.
  try{
    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error('Camera requires HTTPS or localhost.');
    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-   video.srcObject=stream; await video.play();
+   video.srcObject=stream; video.muted=true; video.setAttribute('playsinline',''); video.setAttribute('autoplay',''); await video.play();
    if('BarcodeDetector' in window){
       let formats=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','code_93','codabar','itf','qr_code'];
       try{detector=new BarcodeDetector({formats});}catch(e){detector=new BarcodeDetector();}
@@ -523,8 +539,18 @@ window.openITCOCameraScanner=async function(target){
         if(busy||video.readyState<2||video.videoWidth===0)return; busy=true;
         try{const codes=await detector.detect(video); if(codes&&codes.length){handleITCOScan(codes[0].rawValue||'');}}catch(e){} finally{busy=false;}
       },220);
-   }else status.textContent='Camera opened. Barcode detection is not supported in this browser.';
- }catch(e){status.textContent=e.message||'Camera permission denied.';}
+   }else status.textContent='Camera opened, but barcode detection is not supported here.';
+ }catch(e){
+   const msg=String(e&&e.message||e||'Camera permission denied.');
+   if(/denied|permission|notallowed/i.test(msg)){
+     status.innerHTML='Camera permission denied. <button type="button" class="itco-permission-btn" onclick="itcoOpenAppSettings()">Allow Camera</button>';
+   }else status.textContent=msg;
+ }
+};
+window.itcoOpenAppSettings=function(){
+ try{ if(window.median && median.open && typeof median.open.appSettings==='function'){ median.open.appSettings(); return; } }catch(e){}
+ statusText='Open Android Settings → Apps → ITCO → Permissions → Camera → Allow';
+ const st=document.getElementById('itcoScanStatus'); if(st) st.textContent=statusText;
 };
 window.closeITCOCameraScanner=function(){
  if(timer)clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
@@ -552,7 +578,7 @@ function handleITCOScan(code){
  } else if(mode==='test'){
    const input=document.getElementById('scannerTest');if(input){input.value=code;if(typeof testScanner==='function')testScanner();}
  }
- setTimeout(()=>{if(document.getElementById('itcoScannerModal').classList.contains('show'))status.textContent='Scanning…'},700);
+ if(!(window.median&&median.barcode&&typeof median.barcode.scan==='function')) setTimeout(()=>{if(document.getElementById('itcoScannerModal').classList.contains('show'))status.textContent='Scanning…'},700);
 }
 })();
 </script>
