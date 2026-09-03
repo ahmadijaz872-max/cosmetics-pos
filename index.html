@@ -149,7 +149,7 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
  <div class="grid two"><div class="card"><div class="section-title"><h3>Home / Household Items</h3><span class="badge b-gold">Separate Tracking</span></div><p style="color:var(--muted)">Shop se ghar ke liye nikala gaya saman yahan record karo. Stock automatically minus hoga aur customer sale mein nahi jayega.</p><div class="form-grid"><div class="field"><label>PRODUCT / SCAN BARCODE</label><div class="scan-input"><input id="homeBarcode" placeholder="Scan barcode here" onkeydown="if(event.key==='Enter')addHomeByBarcode()"><button class="btn btn-light" type="button" onclick="openITCOCameraScanner('home')">📷</button></div></div><div class="field"><label>QUANTITY</label><input id="homeQty" type="number" min="1" value="1"></div><div class="field"><label>NOTE</label><input id="homeNote" placeholder="Home use / household"></div></div><div class="actions"><button class="btn btn-gold" onclick="addHomeByBarcode()">Add Home Use</button></div></div><div class="card"><h3 style="margin-top:0">Home Use Summary</h3><div id="homeSummary"></div></div></div><div class="card section"><div class="section-title"><h3>Home / Household History</h3></div><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Cost Value</th><th>Note</th></tr></thead><tbody id="homeTable"></tbody></table></div></div>
 </section>
 <section id="view-hardware" class="view">
- <div class="grid two"><div class="card"><div class="section-title"><h3>Barcode Scanner</h3><span class="badge b-green">USB + CAMERA</span></div><p style="color:var(--muted)">USB scanner keyboard ki tarah instant scan karega; camera scanner mein barcode frame ke andar rakho — successful scan par beep aur product auto-add hoga.</p><div class="field"><label>TEST SCAN</label><input id="scannerTest" placeholder="Scan barcode here..."></div><div class="actions"><button class="btn btn-primary" onclick="testScanner()">Test USB Scanner</button><button class="btn btn-light" onclick="openITCOCameraScanner('test')">📷 Open Camera Scanner</button></div><div id="scannerStatus"></div></div><div class="card"><div class="section-title"><h3>Receipt Printer</h3><span class="badge b-blue">Windows Print</span></div><p style="color:var(--muted)">Bill complete hone par receipt print window open hogi. Thermal printer ko Windows mein install/default printer bana sakte ho.</p><div class="quick"><button onclick="testPrint()"><b>🖨 Test Receipt</b><small>Print a sample receipt</small></button><button onclick="window.print()"><b>📄 Test Page</b><small>Check printer</small></button></div></div></div><div class="card section"><h3>Counter Workflow</h3><div class="statline"><span>Scanner</span><b>Scan → product add</b></div><div class="statline"><span>Bill</span><b>Scan → quantity → total</b></div><div class="statline"><span>Payment</span><b>Received → change/wapas</b></div><div class="statline"><span>Printer</span><b>Complete Sale → Print</b></div></div>
+ <div class="grid two"><div class="card"><div class="section-title"><h3>Barcode Scanner</h3><span class="badge b-green">USB + CAMERA</span></div><p style="color:var(--muted)">USB scanner keyboard ki tarah instant scan karega; camera scanner mein barcode frame ke andar rakho — successful scan par beep aur sirf <b>1 unit</b> auto-add hoga; barcode frame se hatane ke baad next scan par 1 aur unit add hoga.</p><div class="field"><label>TEST SCAN</label><input id="scannerTest" placeholder="Scan barcode here..."></div><div class="actions"><button class="btn btn-primary" onclick="testScanner()">Test USB Scanner</button><button class="btn btn-light" onclick="openITCOCameraScanner('test')">📷 Open Camera Scanner</button></div><div id="scannerStatus"></div></div><div class="card"><div class="section-title"><h3>Receipt Printer</h3><span class="badge b-blue">Windows Print</span></div><p style="color:var(--muted)">Bill complete hone par receipt print window open hogi. Thermal printer ko Windows mein install/default printer bana sakte ho.</p><div class="quick"><button onclick="testPrint()"><b>🖨 Test Receipt</b><small>Print a sample receipt</small></button><button onclick="window.print()"><b>📄 Test Page</b><small>Check printer</small></button></div></div></div><div class="card section"><h3>Counter Workflow</h3><div class="statline"><span>Scanner</span><b>Scan → product add</b></div><div class="statline"><span>Bill</span><b>Scan → quantity → total</b></div><div class="statline"><span>Payment</span><b>Received → change/wapas</b></div><div class="statline"><span>Printer</span><b>Complete Sale → Print</b></div></div>
 </section>
 <section id="view-sales" class="view">
  <div class="card"><div class="section-title"><h3>Sales Invoices</h3><div class="toolbar"><input id="salesFrom" type="date" onchange="renderSales()"><input id="salesTo" type="date" onchange="renderSales()"><input id="salesSearch" placeholder="Invoice/customer..." oninput="renderSales()"></div></div><div class="table-wrap"><table class="table"><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Payment</th><th class="num">Sale</th><th class="num">Profit</th></tr></thead><tbody id="salesTable"></tbody></table></div></div>
@@ -163,7 +163,7 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
    <div class="field"><label>COST PRICE</label><input id="pCost" type="number"></div><div class="field"><label>WHOLESALE PRICE</label><input id="pWholesale" type="number"></div>
    <div class="field"><label>RETAIL PRICE</label><input id="pRetail" type="number"></div><div class="field"><label>OPENING / ADD STOCK</label><input id="pStock" type="number"></div>
    <div class="field"><label>MINIMUM STOCK</label><input id="pMin" type="number" value="5"></div>
-  </div><div class="actions"><button class="btn btn-light" onclick="productFormReset()">Clear</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div>
+  </div><div class="actions"><button class="btn btn-light" onclick="productFormReset()">Clear</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div><div id="productLookupStatus"></div>
  </div><div class="card"><div class="section-title"><h3>Inventory Summary</h3></div><div id="stockSummary"></div></div></div>
  <div class="card section"><div class="section-title"><h3>Products</h3><div class="toolbar"><input id="productSearch" placeholder="Search..." oninput="renderProducts()"></div></div><div class="table-wrap"><table class="table"><thead><tr><th>Barcode</th><th>Product</th><th>Category</th><th>Cost</th><th>Wholesale</th><th>Retail</th><th>Stock</th><th>Value</th><th></th></tr></thead><tbody id="productsTable"></tbody></table></div></div>
 </section>
@@ -268,6 +268,7 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
 <script>
 const KEY='shopledger_pro_v1';
 let cart=[];
+let pendingPOSBarcode='';
 const money=n=>'Rs. '+Number(n||0).toLocaleString('en-PK',{minimumFractionDigits:0,maximumFractionDigits:2});
 const today=()=>new Date().toISOString().slice(0,10);
 const now=()=>new Date().toISOString();
@@ -337,7 +338,20 @@ function printInvoice(s){let w=window.open('','_blank','width=420,height=650');i
 function fillSelects(){let d=db();fillExpenseCategories();let cs=document.getElementById('saleCustomer');if(cs)cs.innerHTML='<option value="">Walk-in Customer</option>'+d.customers.map(c=>`<option value="${c.id}">${esc(c.name)}${c.phone?' — '+esc(c.phone):''}</option>`).join('');let bp=document.getElementById('buyProduct');if(bp)bp.innerHTML='<option value="">— New / Select Product —</option>'+d.products.map(p=>`<option value="${p.id}">${esc(p.name)} (${p.stock})</option>`).join('');let be=document.getElementById('payEmployee');if(be)be.innerHTML=d.employees.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}
 function renderSales(){let d=db(),from=document.getElementById('salesFrom')?.value,to=document.getElementById('salesTo')?.value,q=(document.getElementById('salesSearch')?.value||'').toLowerCase();let arr=d.sales.slice().reverse().filter(s=>(!from||dateOnly(s.date)>=from)&&(!to||dateOnly(s.date)<=to)&&(!q||s.invoice.toLowerCase().includes(q)||(s.customerName||'').toLowerCase().includes(q)));document.getElementById('salesTable').innerHTML=arr.map(s=>`<tr><td><b>${s.invoice}</b></td><td>${fmtDate(s.date)}</td><td>${esc(s.customerName)}</td><td><span class="badge b-blue">${s.payment}</span></td><td class="num">${money(s.total)}</td><td class="num green">${money(saleProfit(s))}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">No invoices found.</td></tr>'}
 function productFormReset(){['pBarcode','pName','pCategory','pSupplier','pCost','pWholesale','pRetail','pStock'].forEach(x=>document.getElementById(x).value='');document.getElementById('pMin').value=5}
-function saveProduct(){let d=db(),barcode=document.getElementById('pBarcode').value.trim(),name=document.getElementById('pName').value.trim();if(!barcode||!name)return alert('Barcode and product name are required.');let old=d.products.find(p=>p.barcode===barcode),stock=Number(document.getElementById('pStock').value||0);let p={id:old?.id||id(),barcode,name,category:document.getElementById('pCategory').value||'General',supplier:document.getElementById('pSupplier').value,cost:Number(document.getElementById('pCost').value||0),wholesale:Number(document.getElementById('pWholesale').value||0),retail:Number(document.getElementById('pRetail').value||0),stock:(old?.stock||0)+stock,min:Number(document.getElementById('pMin').value||5)};if(old)d.products=d.products.map(x=>x.id===old.id?p:x);else d.products.push(p);save(d);productFormReset();renderAll();alert('Product saved.')}
+function saveProduct(){
+ let d=db(),barcode=document.getElementById('pBarcode').value.trim(),name=document.getElementById('pName').value.trim();
+ if(!barcode||!name)return alert('Barcode and product name are required.');
+ let old=d.products.find(p=>p.barcode===barcode),stock=Number(document.getElementById('pStock').value||0);
+ if(stock<0)return alert('Stock cannot be negative.');
+ let p={id:old?.id||id(),barcode,name,category:document.getElementById('pCategory').value||'General',supplier:document.getElementById('pSupplier').value,cost:Number(document.getElementById('pCost').value||0),wholesale:Number(document.getElementById('pWholesale').value||0),retail:Number(document.getElementById('pRetail').value||0),stock:(old?.stock||0)+stock,min:Number(document.getElementById('pMin').value||5)};
+ if(old)d.products=d.products.map(x=>x.id===old.id?p:x);else d.products.push(p);
+ const returnToPOS=!!pendingPOSBarcode&&String(pendingPOSBarcode)===String(barcode);
+ save(d);productFormReset();renderAll();
+ if(returnToPOS){
+   if(Number(p.stock)>0){showView('pos');document.getElementById('posSearch').value='';addCart(p.id);pendingPOSBarcode='';document.getElementById('posSearch').focus();}
+   else {pendingPOSBarcode='';alert('Product saved, but stock is 0. Add at least 1 stock unit to put it in this bill.');}
+ }else alert('Product saved.');
+}
 function renderProducts(){let d=db(),q=(document.getElementById('productSearch')?.value||'').toLowerCase(),arr=d.products.filter(p=>!q||p.name.toLowerCase().includes(q)||p.barcode.toLowerCase().includes(q));document.getElementById('productsTable').innerHTML=arr.map(p=>`<tr><td>${esc(p.barcode)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.category)}</td><td>${money(p.cost)}</td><td>${money(p.wholesale)}</td><td>${money(p.retail)}</td><td><span class="badge ${p.stock<=p.min?'b-red':'b-green'}">${p.stock}</span></td><td>${money(p.stock*p.cost)}</td><td><button class="btn btn-light" onclick="editProduct('${p.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="9" class="empty">No products.</td></tr>';document.getElementById('stockSummary').innerHTML=[['Products',d.products.length],['Units in Stock',sum(d.products,p=>p.stock)],['Stock at Cost',money(sum(d.products,p=>p.stock*p.cost))],['Potential Retail Value',money(sum(d.products,p=>p.stock*p.retail))]].map(x=>`<div class="statline"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('')}
 function editProduct(pid){let p=db().products.find(x=>x.id===pid);['pBarcode','pName','pCategory','pSupplier'].forEach((id,i)=>document.getElementById(id).value=[p.barcode,p.name,p.category,p.supplier][i]);['pCost','pWholesale','pRetail','pMin'].forEach((id,i)=>document.getElementById(id).value=[p.cost,p.wholesale,p.retail,p.min][i]);document.getElementById('pStock').value=0;window.scrollTo({top:0,behavior:'smooth'})}
 function loadPurchaseProduct(){
@@ -361,12 +375,21 @@ function lookupProductBarcode(mode){
      document.getElementById('purchaseLookupStatus').innerHTML='<div class="alert" style="margin-top:8px">✓ Existing product found — details loaded automatically.</div>';
    }
  } else if(mode==='home'){
-   const input=document.getElementById('homeBarcode');if(input){input.value=code;addHomeByBarcode();}
+   const input=document.getElementById('homeBarcode');if(input){input.value=barcode;addHomeByBarcode();}
  } else if(mode==='purchase'){
    document.getElementById('buyProduct').value='';
    document.getElementById('buyProductName').value='';
    document.getElementById('purchaseLookupStatus').innerHTML='<div class="alert" style="margin-top:8px">New barcode. Enter product name/details below and save purchase — product will be created automatically.</div>';
- }
+ } else if(mode==='product'){
+   document.getElementById('productLookupStatus').innerHTML='<div class="alert" style="margin-top:10px">Barcode <b>'+esc(barcode)+'</b> is not registered. <button class="btn btn-primary" type="button" onclick="prepareNewProductFromBarcode(document.getElementById(\'pBarcode\').value)">＋ Add Product</button></div>';
+}
+function prepareNewProductFromBarcode(barcode){
+ productFormReset();
+ document.getElementById('pBarcode').value=barcode||'';
+ document.getElementById('pName').focus();
+ const st=document.getElementById('productLookupStatus');
+ if(st)st.innerHTML='<div class="alert" style="margin-top:10px">Barcode ready. Enter product name, cost, retail/wholesale price and <b>Opening / Add Stock</b>, then Save Product.</div>';
+}
 }
 function savePurchase(){
  let d=db(),barcode=(document.getElementById('buyBarcode').value||'').trim(),pid=document.getElementById('buyProduct').value,
@@ -435,7 +458,32 @@ function renderReports(){let p=document.getElementById('reportPeriod')?.value||'
 function saleCostTotal(ss){return sum(ss,s=>saleCost(s))}
 function openModal(title,body){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modalBg').classList.add('show')}
 function closeModal(){document.getElementById('modalBg').classList.remove('show')}
-function scanPOSBarcode(){let q=document.getElementById('posSearch').value.trim();if(!q)return;let p=db().products.find(x=>x.barcode===q);if(p){addCart(p.id);document.getElementById('posSearch').value='';renderPOSProducts();document.getElementById('posSearch').focus()}else alert('Barcode not found. Add this product first.')}
+function scanPOSBarcode(){
+ let q=document.getElementById('posSearch').value.trim();if(!q)return;
+ let p=db().products.find(x=>String(x.barcode)===String(q));
+ if(p){
+   if(Number(p.stock)<=0){
+     pendingPOSBarcode=q;
+     openModal('Product Out of Stock',`<div class="alert">This barcode is already registered but <b>${esc(p.name)}</b> has <b>0 stock</b>.</div><div class="actions"><button class="btn btn-light" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addStockFromPOS('${esc(p.id)}')">Add Stock</button></div>`);
+     return;
+   }
+   addCart(p.id);document.getElementById('posSearch').value='';renderPOSProducts();document.getElementById('posSearch').focus();return;
+ }
+ pendingPOSBarcode=q;
+ openModal('Product Not Found',`<div class="alert"><b>Barcode:</b> ${esc(q)}<br>This product is not in your stock database yet.</div><p style="color:var(--muted);margin:12px 0 4px">Add the product once, enter its stock and prices, then ITCO will return to this bill and add <b>1 unit</b> automatically.</p><div class="actions"><button class="btn btn-light" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addMissingProductFromPOS()">＋ Add Product</button></div>`);
+}
+function addMissingProductFromPOS(){
+ const bc=pendingPOSBarcode;closeModal();showView('products');
+ document.getElementById('pBarcode').value=bc||'';
+ document.getElementById('pName').focus();
+ const st=document.getElementById('productLookupStatus');if(st)st.innerHTML='<div class="alert" style="margin-top:10px">New barcode ready. Enter product name, prices and <b>Opening / Add Stock</b>. Save Product ke baad ITCO wapas POS par aayega.</div>';
+}
+function addStockFromPOS(pid){
+ closeModal();showView('products');editProduct(pid);
+ const st=document.getElementById('productLookupStatus');if(st)st.innerHTML='<div class="alert" style="margin-top:10px">Add stock for this product. Save Product ke baad ITCO wapas POS par aayega.</div>';
+ pendingPOSBarcode=document.getElementById('pBarcode').value.trim();
+ document.getElementById('pStock').focus();
+}
 function testScanner(){let v=document.getElementById('scannerTest').value.trim();document.getElementById('scannerStatus').innerHTML=v?`<div class="alert" style="margin-top:10px">Scanner received: <b>${esc(v)}</b></div>`:'<div class="alert" style="margin-top:10px">No barcode received. Check scanner/USB connection.</div>'}
 function testPrint(){printInvoice({invoice:'TEST-0001',date:now(),customerName:'Printer Test',items:[{name:'ITCO Test Item',qty:1,price:100,cost:60}],subtotal:100,discount:0,total:100,paid:100,due:0})}
 function addHomeByBarcode(){let d=db(),barcode=document.getElementById('homeBarcode').value.trim(),qty=Number(document.getElementById('homeQty').value||1),p=d.products.find(x=>x.barcode===barcode);if(!p)return alert('Barcode not found. Scan a product barcode.');if(qty<=0||qty>p.stock)return alert('Quantity is greater than available stock.');p.stock-=qty;if(!d.homeUses)d.homeUses=[];if(!d.khataEntries)d.khataEntries=[];if(!d.distributorEntries)d.distributorEntries=[];d.homeUses.push({id:id(),date:now(),productId:p.id,productName:p.name,qty,costValue:p.cost*qty,note:document.getElementById('homeNote').value||'Home use'});save(d);document.getElementById('homeBarcode').value='';document.getElementById('homeQty').value=1;document.getElementById('homeNote').value='';renderAll()}
@@ -508,9 +556,9 @@ init();
 </div>
 <script>
 (function(){
-let stream=null, timer=null, mode='pos', detector=null, busy=false;
+let stream=null, timer=null, mode='pos', detector=null, busy=false, scanLocked=false, lastDetectedAt=0;
 window.openITCOCameraScanner=async function(target){
- mode=target||'pos';
+ mode=target||'pos'; scanLocked=false; lastDetectedAt=0;
  const modal=document.getElementById('itcoScannerModal'), video=document.getElementById('itcoScanVideo'), status=document.getElementById('itcoScanStatus');
  modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); status.innerHTML='Starting scanner…';
  // Median native barcode scanner: preferred on Android/iOS app.
@@ -537,8 +585,17 @@ window.openITCOCameraScanner=async function(target){
       status.textContent='Scanning…';
       timer=setInterval(async()=>{
         if(busy||video.readyState<2||video.videoWidth===0)return; busy=true;
-        try{const codes=await detector.detect(video); if(codes&&codes.length){handleITCOScan(codes[0].rawValue||'');}}catch(e){} finally{busy=false;}
-      },220);
+        try{
+          const codes=await detector.detect(video);
+          if(codes&&codes.length){
+            lastDetectedAt=Date.now();
+            const code=codes[0].rawValue||'';
+            if(code && !scanLocked){scanLocked=true;handleITCOScan(code);}
+          }else if(scanLocked && Date.now()-lastDetectedAt>850){
+            scanLocked=false;
+          }
+        }catch(e){} finally{busy=false;}
+      },180);
    }else status.textContent='Camera opened, but barcode detection is not supported here.';
  }catch(e){
    const msg=String(e&&e.message||e||'Camera permission denied.');
@@ -549,11 +606,11 @@ window.openITCOCameraScanner=async function(target){
 };
 window.itcoOpenAppSettings=function(){
  try{ if(window.median && median.open && typeof median.open.appSettings==='function'){ median.open.appSettings(); return; } }catch(e){}
- statusText='Open Android Settings → Apps → ITCO → Permissions → Camera → Allow';
+ const statusText='Open Android Settings → Apps → ITCO → Permissions → Camera → Allow';
  const st=document.getElementById('itcoScanStatus'); if(st) st.textContent=statusText;
 };
 window.closeITCOCameraScanner=function(){
- if(timer)clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ scanLocked=false;lastDetectedAt=0;if(timer)clearInterval(timer);timer=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
  const v=document.getElementById('itcoScanVideo');if(v)v.srcObject=null;
  const m=document.getElementById('itcoScannerModal');m.classList.remove('show');m.setAttribute('aria-hidden','true');
 };
