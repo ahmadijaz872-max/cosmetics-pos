@@ -60,9 +60,121 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
 .scan-input{display:flex;gap:6px}.scan-input input{flex:1}.scan-input .btn{padding:8px 11px}
 #view-khata .card,#view-distributors .card{border-top:3px solid var(--primary)}
 </style>
+
+<style id="itco-mobile-v2">
+.mobile-bottom-nav{display:none}
+@media(max-width:700px){
+  body{background:#f7f9fc!important;color:#172b4d!important;overflow-x:hidden}
+  .main{padding:70px 10px 92px!important}
+  .top{height:60px!important;padding:8px 12px 8px 58px!important;background:rgba(255,255,255,.97)!important;box-shadow:0 1px 0 #e4ebf4,0 5px 18px rgba(21,65,110,.05)!important;border:0!important}
+  .top h1{font-size:15px!important;font-weight:800!important;letter-spacing:-.01em}
+  .mobile-menu-btn{top:10px!important;left:10px!important;width:40px!important;height:40px!important;border-radius:12px!important;background:#fff!important;border:1px solid #d7e3f0!important;color:#1769e0!important}
+
+  /* bottom navigation — primary phone workflow */
+  .mobile-bottom-nav{position:fixed;display:grid;grid-template-columns:repeat(5,1fr);left:8px;right:8px;bottom:8px;height:66px;z-index:10000;background:rgba(255,255,255,.97);border:1px solid #dbe5f0;border-radius:20px;box-shadow:0 12px 35px rgba(21,65,110,.16);padding:6px 4px;backdrop-filter:blur(12px)}
+  .mobile-bottom-nav button{border:0;background:transparent;color:#7a8da5;font:600 10px Inter,Segoe UI,Arial,sans-serif;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
+  .mobile-bottom-nav button .m-icon{width:30px;height:27px;display:grid;place-items:center;font-size:17px;border-radius:10px}
+  .mobile-bottom-nav button.active{color:#1769e0;background:#edf5ff}
+  .mobile-bottom-nav button.active .m-icon{background:#dbeaff}
+  .mobile-bottom-nav button.sale{color:#fff;background:linear-gradient(135deg,#1769e0,#0b4fb3);box-shadow:0 7px 18px rgba(23,105,224,.28)}
+  .mobile-bottom-nav button.sale .m-icon{background:transparent;font-size:19px}
+
+  /* drawer stays available from hamburger, but no longer controls the primary flow */
+  .sidebar{width:285px!important;max-width:86vw!important;border-right:1px solid #dbe5f0!important}
+  .sidebar .brand{margin-bottom:12px!important}
+  .nav button{min-height:44px!important}
+
+  /* app cards */
+  .card,.panel,.metric,.modal-card{border-radius:18px!important;box-shadow:0 6px 24px rgba(21,65,110,.055)!important}
+  .section{margin-top:10px!important}
+
+  /* invoice header like a dedicated mobile POS screen */
+  .invoice-shell{width:100%!important}
+  .invoice-head{padding:4px 4px 10px!important;align-items:center!important}
+  .invoice-head h2{font-size:23px!important;letter-spacing:-.03em;margin:2px 0!important}
+  .invoice-head p{font-size:11px!important;max-width:235px;line-height:1.35}
+  .invoice-head .badge{font-size:10px!important;padding:7px 9px!important}
+  .invoice-steps{max-width:none!important;margin:0 2px 10px!important;background:#fff;border:1px solid #dbe5f0;border-radius:14px;padding:5px!important;box-shadow:0 4px 16px rgba(21,65,110,.04)}
+  .invoice-step{flex:1;justify-content:center;gap:6px!important;font-size:11px!important}
+  .invoice-step span{width:25px!important;height:25px!important;font-size:11px!important}
+  .step-line{margin:0 5px!important}
+
+  .scan-hero{margin-bottom:10px!important;padding:14px!important;border-radius:18px!important;display:block!important;background:linear-gradient(145deg,#f8fbff,#edf5ff)!important}
+  .scan-hero-copy .eyebrow{font-size:9px!important}
+  .scan-hero-copy h3{font-size:17px!important;margin:4px 0!important}
+  .scan-hero-copy p{font-size:11px!important;margin:2px 0 11px!important}
+  .scan-hero .product-search{display:block!important;margin:0!important}
+  .itco-camera-btn{width:100%!important;height:50px!important;margin:0!important;border-radius:13px!important;font-size:15px!important;box-shadow:0 7px 18px rgba(23,105,224,.2)!important}
+  .itco-camera-btn span{display:inline!important}
+
+  /* product picker */
+  #posProducts.quick{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;margin-bottom:10px!important}
+  #posProducts.quick button{min-height:82px!important;padding:11px!important;border:1px solid #dbe5f0!important;border-radius:15px!important;background:#fff!important;color:#173255!important;text-align:left!important;box-shadow:0 5px 16px rgba(21,65,110,.045)!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:5px!important}
+  #posProducts.quick button b{font-size:12px!important;line-height:1.25!important;display:block!important}
+  #posProducts.quick button small{font-size:10px!important;color:#71859d!important;display:block!important}
+
+  /* invoice items: mobile cards instead of desktop table */
+  .cart-card{border-radius:18px!important;overflow:hidden!important}
+  .cart-card .section-title{padding:13px 14px!important}
+  .cart-card .section-title h3{font-size:14px!important}
+  .cart-card .table-wrap{overflow:visible!important}
+  .cart-card table{min-width:0!important;width:100%!important;border-collapse:separate!important;border-spacing:0!important}
+  .cart-card thead{display:none!important}
+  .cart-card tbody,.cart-card tr,.cart-card td{display:block!important;width:100%!important}
+  .cart-card tr{position:relative!important;padding:12px 44px 12px 13px!important;border-top:1px solid #edf2f7!important;min-height:86px!important}
+  .cart-card tr:first-child{border-top:0!important}
+  .cart-card td{padding:0!important;border:0!important;white-space:normal!important}
+  .cart-card td:nth-child(1){font-size:13px!important;font-weight:700!important;padding-right:4px!important}
+  .cart-card td:nth-child(2){display:inline-block!important;width:auto!important;color:#536a84!important;font-size:11px!important;margin-top:5px!important}
+  .cart-card td:nth-child(3){display:inline-block!important;width:auto!important;margin-left:9px!important;vertical-align:middle!important}
+  .cart-card td:nth-child(4){position:absolute!important;right:13px!important;top:43px!important;text-align:right!important;font-weight:800!important;color:#0b4fb3!important;font-size:13px!important;width:auto!important}
+  .cart-card td:nth-child(5){position:absolute!important;right:10px!important;top:12px!important;width:auto!important}
+  .cart-card td:nth-child(5) .btn{padding:4px 6px!important;border-radius:8px!important;color:#d9485f!important;border-color:#f0cbd2!important;background:#fff!important}
+  .qty-control{height:31px!important;border-radius:9px!important;margin-top:2px!important}
+  .qty-control button{height:29px!important;min-width:31px!important;padding:0!important;font-size:16px!important}
+  .qty-control b{min-width:27px!important;font-size:12px!important}
+  .cart-barcode{font-size:9px!important;margin-top:2px!important}
+  .invoice-bottom-bar{margin-top:10px!important;border-radius:17px!important;padding:10px!important;position:sticky!important;bottom:78px!important;z-index:20!important;box-shadow:0 10px 25px rgba(21,65,110,.12)!important}
+  .invoice-bottom-bar small{font-size:9px!important}.invoice-bottom-bar strong{font-size:18px!important}
+  .invoice-next{min-height:43px!important;border-radius:12px!important;padding:10px 12px!important;font-size:11px!important}
+
+  /* payment screen */
+  .payment-layout{display:block!important}
+  .payment-card,.invoice-preview-card{padding:14px!important;border-radius:18px!important}
+  .payment-card .section-title h3{font-size:17px!important}
+  .payment-card .form-grid{grid-template-columns:1fr 1fr!important;gap:9px!important}
+  .payment-card .field.full{grid-column:1/-1!important}
+  .payment-card .field label{font-size:9px!important;letter-spacing:.03em}
+  .payment-card input,.payment-card select{min-height:45px!important;padding:11px!important;font-size:14px!important;border-radius:12px!important}
+  #received{height:56px!important;font-size:22px!important;font-weight:800!important;border:2px solid #6aa2e8!important;background:#fafdff!important}
+  .checkout-summary{margin-top:12px!important}
+  .summary-row{padding:7px 0!important;font-size:12px!important}
+  .summary-row.total{font-size:16px!important}
+  .cash-highlight{margin-top:10px!important;padding:13px!important;border-radius:14px!important;background:linear-gradient(135deg,#edf6ff,#e6f1ff)!important}
+  .cash-highlight span{font-size:10px!important;font-weight:800!important}.cash-highlight b{font-size:22px!important}
+  .invoice-preview-card{margin-top:10px!important}
+  .invoice-preview-card .section-title h3{font-size:14px!important}
+  .preview-row{font-size:11px!important;padding:8px 0!important}
+  .preview-total{font-size:16px!important;margin-top:10px!important;padding-top:10px!important}
+  .invoice-actions{position:sticky!important;bottom:76px!important;background:rgba(247,249,252,.96)!important;padding:9px 0!important;z-index:30!important}
+  .invoice-actions .btn{min-height:48px!important;border-radius:13px!important;font-size:12px!important}
+  .save-print-btn{flex:1!important;font-size:13px!important!important}
+
+  /* remove accidental keyboard focus behavior on phone */
+  #posSearch{display:none!important}
+}
+</style>
 </head>
 <body>
 <div class="app">
+<nav class="mobile-bottom-nav no-print" id="mobileBottomNav">
+ <button data-mobile-view="dashboard" onclick="showView('dashboard',this)" class="active"><span class="m-icon">⌂</span><span>Home</span></button>
+ <button data-mobile-view="pos" onclick="showView('pos',this)" class="sale"><span class="m-icon">＋</span><span>New Sale</span></button>
+ <button data-mobile-view="products" onclick="showView('products',this)"><span class="m-icon">▦</span><span>Stock</span></button>
+ <button data-mobile-view="khata" onclick="showView('khata',this)"><span class="m-icon">▤</span><span>Khata</span></button>
+ <button data-mobile-view="more" onclick="toggleMobileNav(true)"><span class="m-icon">☰</span><span>More</span></button>
+</nav>
+
 <aside class="sidebar">
   <div class="brand"><div class="brand-icon">I</div><div><b>ITCO</b><br><small>Levon Fairever</small></div></div>
   <div class="nav">
@@ -294,9 +406,12 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function dateOnly(s){return new Date(s).toISOString().slice(0,10)}
 function showView(v,btn){
  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');
- document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');
+ document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn&&btn.closest('.nav'))btn.classList.add('active');
+ document.querySelectorAll('#mobileBottomNav button').forEach(x=>x.classList.toggle('active',x.dataset.mobileView===v));
  const names={dashboard:'ITCO Business Dashboard',pos:'New Sale / POS',home:'Home / Household',hardware:'Scanner & Printer',sales:'Sales Invoices',products:'Products & Stock',purchases:'Purchases',customers:'Customers',expenses:'Expenses',employees:'Employees & Salary',savings:'Savings / Reserve',closing:'Daily Closing',reports:'Reports & P&L',khata:'Customer / Shopkeeper Khata',distributors:'Distributor Khata'};
- document.getElementById('pageTitle').textContent=names[v]||'ShopLedger';renderAll()
+ document.getElementById('pageTitle').textContent=names[v]||'ShopLedger';
+ if(window.innerWidth<=700)toggleMobileNav(false);
+ renderAll()
 }
 function renderAll(){renderDashboard();renderHome();renderPOSProducts();renderCart();renderSales();renderProducts();renderPurchases();renderCustomers();renderKhata();renderDistributors();renderExpenses();renderEmployees();renderSavings();renderClosing();setClosingPeriod('month');renderReports();fillSelects()}
 function init(){let d=db();if(!d.homeUses)d.homeUses=[];if(!d.khataEntries)d.khataEntries=[];if(!d.distributorEntries)d.distributorEntries=[];if(!d.cashOpenings)d.cashOpenings={};if(!d.expenseCategories)d.expenseCategories=['Rent','Electricity','Transport','Maintenance','Food / Tea','Home','Miscellaneous'];save(d);document.getElementById('todayText').textContent=new Date().toLocaleDateString('en-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});document.getElementById('closeDate').value=today();renderAll();document.getElementById('invoiceNo').textContent='INV-'+today().replaceAll('-','')+'-'+String(db().sales.length+1).padStart(3,'0')}
@@ -334,7 +449,7 @@ function renderCart(){
  if(document.getElementById('billSummary'))document.getElementById('billSummary').innerHTML=`<div class="summary-row"><span>Subtotal</span><b>${money(subtotal)}</b></div><div class="summary-row"><span>Discount</span><b class="red">− ${money(discount)}</b></div><div class="summary-row total"><span>TOTAL</span><span>${money(total)}</span></div><div class="cash-highlight"><span>${payment==='Credit'?'AMOUNT DUE':'CHANGE / WAPAS'}</span><b>${money(payment==='Credit'?due:change)}</b></div>`;
  let prev=document.getElementById('invoicePreview');if(prev)prev.innerHTML=cart.length?cart.map(i=>{let p=d.products.find(x=>x.id===i.id);let price=type==='wholesale'?p.wholesale:p.retail;return `<div class="preview-row"><span>${esc(p.name)} × ${i.qty}</span><b>${money(price*i.qty)}</b></div>`}).join('')+`<div class="preview-total"><span>Total</span><b>${money(total)}</b></div>`:'<div class="empty">Add products first.</div>';
 }
-function nextInvoiceStep(){if(!cart.length)return alert('Please scan/add at least one product first.');document.getElementById('invoicePanel1').classList.remove('active');document.getElementById('invoicePanel2').classList.add('active');document.getElementById('invoiceStep1').classList.remove('active');document.getElementById('invoiceStep2').classList.add('active');renderCart();setTimeout(()=>document.getElementById('received')?.focus(),120)}
+function nextInvoiceStep(){if(!cart.length)return alert('Please scan/add at least one product first.');document.getElementById('invoicePanel1').classList.remove('active');document.getElementById('invoicePanel2').classList.add('active');document.getElementById('invoiceStep1').classList.remove('active');document.getElementById('invoiceStep2').classList.add('active');renderCart();if(window.innerWidth>700)setTimeout(()=>document.getElementById('received')?.focus(),120)}
 function backToProducts(){document.getElementById('invoicePanel2').classList.remove('active');document.getElementById('invoicePanel1').classList.add('active');document.getElementById('invoiceStep2').classList.remove('active');document.getElementById('invoiceStep1').classList.add('active')}
 function setQty(n,v){let d=db(),p=d.products.find(x=>x.id===cart[n].id);cart[n].qty=Math.max(1,Math.min(Number(v),p.stock));renderCart()}
 function clearCart(){cart=[];document.getElementById('received').value=0;document.getElementById('saleDiscount').value=0;renderCart()}
