@@ -329,11 +329,23 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 
 <script>
-// Supabase Configuration
+// Supabase Cloud Sync — ITCO
+// Uses the existing public app_state table (id = 'main').
 const SUPABASE_URL = 'https://bpxslrikjpmgfizhixs.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJweHNscmlranBtZ2ZpemhoaXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMTY5NjksImV4cCI6MjEwMzY5Mjk2OX0.wTIgBz5qKBr8Kv1XEgdxCAsQ2yW5l2HsTDq8EPB74C8';
-if (window.supabase) {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY = 'sb_publishable_99g4dfJ0cKRXa8SCrliNEw_x1xUSPDv';
+let supabaseClient = null;
+let cloudChannel = null;
+let cloudSyncStarted = false;
+let lastLocalSaveAt = 0;
+
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+  }
+} catch (e) {
+  console.error('ITCO Supabase init failed:', e);
 }
 
 const KEY = 'shopledger_pro_v1';
@@ -349,42 +361,109 @@ const now = () => new Date().toISOString();
 const fmtDate = s => new Date(s).toLocaleString('en-PK', {dateStyle: 'medium', timeStyle: 'short'});
 const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-// Supabase Real-Time Sync Logic
-async function syncFromCloud() {
-  const statusEl = document.getElementById('itco-cloud-status');
-  if(!supabaseClient) return;
+// Supabase Cloud Sync Logic
+const CLOUD_ROW_ID = 'main';
+let syncTimeout;
+let cloudPollTimer = null;
+
+function setCloudStatus(text) {
+  const el = document.getElementById('itco-cloud-status');
+  if (el) el.textContent = text;
+}
+
+function applyCloudData(data) {
+  if (!data || typeof data !== 'object') return;
+  localStorage.setItem(KEY, JSON.stringify(data));
+  renderAll();
+  setCloudStatus('☁ Connected');
+}
+
+async function syncFromCloud(options = {}) {
+  if (!supabaseClient) {
+    setCloudStatus('☁ Cloud unavailable');
+    return false;
+  }
   try {
-    if(statusEl) statusEl.textContent = '☁ Syncing...';
-    const { data, error } = await supabaseClient.from('pos_data').select('data').eq('id', KEY).single();
-    if (error && error.code !== 'PGRST116') {
-      if(statusEl) statusEl.textContent = '☁ Offline Mode';
-      return;
+    if (!options.silent) setCloudStatus('☁ Syncing...');
+    const { data: row, error } = await supabaseClient
+      .from('app_state')
+      .select('id,data,updated_at')
+      .eq('id', CLOUD_ROW_ID)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (row && row.data && typeof row.data === 'object') {
+      // Don't replace a very recent local edit with an older poll response.
+      const cloudMs = row.updated_at ? Date.parse(row.updated_at) : 0;
+      if (!cloudMs || cloudMs >= lastLocalSaveAt - 1500 || options.force) {
+        applyCloudData(row.data);
+      }
+      return true;
     }
-    if (data && data.data) {
-      localStorage.setItem(KEY, JSON.stringify(data.data));
-      renderAll();
-      if(statusEl) statusEl.textContent = '☁ Connected';
-    }
+
+    // First device / empty cloud: seed the cloud with the current local data.
+    await uploadToCloud(db(), true);
+    return true;
   } catch (err) {
-    if(statusEl) statusEl.textContent = '☁ Sync Error';
+    console.error('ITCO cloud sync error:', err);
+    setCloudStatus('☁ Offline — local data safe');
+    return false;
   }
 }
 
-let syncTimeout;
-window.ITCO_queueCloudSave = function(data) {
-  const statusEl = document.getElementById('itco-cloud-status');
-  if(!supabaseClient) return;
-  if(statusEl) statusEl.textContent = '☁ Saving...';
-  clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(async () => {
+async function uploadToCloud(data, immediate = false) {
+  if (!supabaseClient) return false;
+  const doSave = async () => {
     try {
-      const { error } = await supabaseClient.from('pos_data').upsert({ id: KEY, data, updated_at: now() });
-      if (!error && statusEl) statusEl.textContent = '☁ Saved';
-    } catch(err) {
-      if(statusEl) statusEl.textContent = '☁ Save Failed';
+      setCloudStatus('☁ Saving...');
+      const { error } = await supabaseClient
+        .from('app_state')
+        .upsert({ id: CLOUD_ROW_ID, data, updated_at: now() }, { onConflict: 'id' });
+      if (error) throw error;
+      setCloudStatus('☁ Saved');
+      return true;
+    } catch (err) {
+      console.error('ITCO cloud save error:', err);
+      setCloudStatus('☁ Save failed — local data safe');
+      return false;
     }
-  }, 800);
+  };
+
+  clearTimeout(syncTimeout);
+  if (immediate) return doSave();
+  syncTimeout = setTimeout(doSave, 500);
+  return true;
+}
+
+window.ITCO_queueCloudSave = function(data) {
+  lastLocalSaveAt = Date.now();
+  uploadToCloud(data, false);
 };
+
+function startCloudRealtime() {
+  if (!supabaseClient || cloudSyncStarted) return;
+  cloudSyncStarted = true;
+
+  // Realtime is used when available; polling remains as a reliable fallback.
+  try {
+    cloudChannel = supabaseClient
+      .channel('itco-app-state-sync')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'app_state', filter: 'id=eq.main'
+      }, payload => {
+        if (payload.new && payload.new.data) applyCloudData(payload.new.data);
+      })
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') setCloudStatus('☁ Live');
+      });
+  } catch (e) {
+    console.warn('Realtime unavailable; polling will continue.', e);
+  }
+
+  clearInterval(cloudPollTimer);
+  cloudPollTimer = setInterval(() => syncFromCloud({ silent: true }), 3000);
+}
 
 function db() {
   let x = localStorage.getItem(KEY);
@@ -454,14 +533,15 @@ function init() {
   if (!d.distributors) d.distributors = [];
   if (!d.cashOpenings) d.cashOpenings = {};
   if (!d.expenseCategories) d.expenseCategories = ['Rent', 'Electricity', 'Transport', 'Maintenance', 'Food / Tea', 'Home', 'Miscellaneous'];
-  save(d);
+  // Initialization must not upload/overwrite the cloud before the first cloud read.
+  localStorage.setItem(KEY, JSON.stringify(d));
   document.getElementById('todayText').textContent = new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('closeDate').value = today();
   renderAll();
   if (!editingInvoiceId) {
     document.getElementById('invoiceNo').textContent = 'INV-' + today().replaceAll('-', '') + '-' + String(db().sales.length + 1).padStart(3, '0');
   }
-  syncFromCloud();
+  syncFromCloud().then(() => startCloudRealtime());
 }
 
 function sum(a, fn) { return a.reduce((t, x) => t + Number(fn(x) || 0), 0); }
