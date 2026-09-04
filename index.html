@@ -544,6 +544,21 @@ function saveOpeningCash() {
 
 function focusPos() { document.getElementById('posSearch').focus(); }
 
+function scanPOSBarcode() {
+  let inp = document.getElementById('posSearch');
+  if(!inp) return;
+  let code = inp.value.trim();
+  if(!code) return;
+  let d = db();
+  let p = d.products.find(x => String(x.barcode) === String(code));
+  if(p) {
+    addCart(p.id);
+    inp.value = '';
+  } else {
+    alert('Product not found for barcode: ' + code);
+  }
+}
+
 function renderPOSProducts() {
   let q = (document.getElementById('posSearch')?.value || '').toLowerCase(), d = db();
   let p = d.products.filter(x => !q || x.name.toLowerCase().includes(q) || x.barcode.toLowerCase().includes(q)).filter(x => x.stock > 0).slice(0, 18);
@@ -1077,83 +1092,115 @@ function setClosingPeriod(period) {
     <div class="statline"><span>Report Period</span><b>${start} to ${end} (${period.toUpperCase()})</b></div>
     <div class="statline"><span>Total Invoices</span><b>${sales.length}</b></div>
     <div class="statline"><span>Total Revenue</span><b>${money(rev)}</b></div>
-    <div class="statline"><span>Cost of Goods Sold</span><b>${money(rev - gp)}</b></div>
     <div class="statline"><span>Gross Profit</span><b class="green">${money(gp)}</b></div>
-    <div class="statline"><span>Shop Expenses</span><b class="red">${money(exp)}</b></div>
-    <div class="statline"><span>Staff Salary / Advance</span><b class="red">${money(sal)}</b></div>
-    <div class="statline"><span>Net Business Profit</span><b class="${net >= 0 ? 'green' : 'red'}">${money(net)}</b></div>
+    <div class="statline"><span>Total Expenses</span><b class="red">${money(exp + sal)}</b></div>
+    <div class="statline"><span>Net Profit</span><b class="${net >= 0 ? 'green' : 'red'}">${money(net)}</b></div>
   `;
 }
 
 function renderClosing() {
-  let ds = document.getElementById('closeDate')?.value || today(), d = db(), sales = salesInRange(ds, ds), cash = cashSalesInRange(ds, ds), exp = sum(d.expenses.filter(e => dateOnly(e.date) === ds), e => e.amount), sal = sum(d.salaryPayments.filter(e => dateOnly(e.date) === ds), e => e.amount), sav = sum(d.savings.filter(e => dateOnly(e.date) === ds), e => e.amount), pur = sum(d.purchases.filter(e => dateOnly(e.date) === ds), e => e.paid), expected = calcExpectedCash(ds), closing = d.closings.find(x => x.date === ds);
-  if (closing) document.getElementById('actualCash').value = closing.actual;
-  document.getElementById('closingBreakdown').innerHTML = [['Opening Cash', openingCashFor(ds)], ['Cash Sales', cash], ['Purchases Paid', -pur], ['Expenses', -exp], ['Salary Paid', -sal], ['Savings', -sav], ['Expected Closing Cash', expected]].map(x => `<div class="statline"><span>${x[0]}</span><b class="${x[1] < 0 ? 'red' : ''}">${money(x[1])}</b></div>`).join('');
-  document.getElementById('closingHistory').innerHTML = d.closings.slice().reverse().map(x => `<div class="statline"><span>${x.date}<br><small>Expected ${money(x.expected)}</small></span><b>${money(x.actual)}<br><small class="${x.difference < 0 ? 'red' : 'green'}">${x.difference >= 0 ? '+' : ''}${money(x.difference)}</small></b></div>`).join('') || '<div class="empty">No closings saved.</div>';
+  let ds = document.getElementById('closeDate').value || today();
+  let d = db();
+  let expected = calcExpectedCash(ds);
+  let c = d.closings.find(x => x.date === ds);
+  
+  document.getElementById('closingBreakdown').innerHTML = [
+    ['Opening Cash', openingCashFor(ds)],
+    ['Cash Sales', cashSalesInRange(ds, ds)],
+    ['Expenses', -sum(d.expenses.filter(e => dateOnly(e.date) === ds), e => e.amount)],
+    ['Salary Paid', -sum(d.salaryPayments.filter(e => dateOnly(e.date) === ds), e => e.amount)],
+    ['Savings Taken Out', -sum(d.savings.filter(e => dateOnly(e.date) === ds), e => e.amount)],
+    ['Expected Cash', expected]
+  ].map(x => `<div class="statline"><span>${x[0]}</span><b class="${x[1] < 0 ? 'red' : ''}">${money(x[1])}</b></div>`).join('');
+  
+  if (c) {
+    document.getElementById('actualCash').value = c.actual;
+  } else {
+    document.getElementById('actualCash').value = expected;
+  }
+
+  document.getElementById('closingHistory').innerHTML = d.closings.slice().reverse().map(x => `
+    <div class="statline">
+      <span><b>${x.date}</b><br><small>Expected: ${money(x.expected)} | Actual: ${money(x.actual)}</small></span>
+      <b class="${x.diff < 0 ? 'red' : 'green'}">${x.diff === 0 ? 'Balanced' : money(x.diff)}</b>
+    </div>
+  `).join('') || '<div class="empty">No saved closings yet.</div>';
 }
 
 function saveClosing() {
-  let ds = document.getElementById('closeDate').value, actual = Number(document.getElementById('actualCash').value);
-  if (!ds || isNaN(actual)) return alert('Enter actual cash counted.');
-  let d = db(), expected = calcExpectedCash(ds);
-  d.closings = d.closings.filter(x => x.date !== ds);
-  d.closings.push({ date: ds, expected, actual, difference: actual - expected, savedAt: now() });
-  save(d); renderAll();
-  alert('Daily closing saved.');
+  let ds = document.getElementById('closeDate').value || today();
+  let actual = Number(document.getElementById('actualCash').value || 0);
+  let expected = calcExpectedCash(ds);
+  let diff = actual - expected;
+  let d = db();
+  
+  let idx = d.closings.findIndex(x => x.date === ds);
+  let entry = { id: id(), date: ds, expected, actual, diff, savedAt: now() };
+  if (idx !== -1) d.closings[idx] = entry; else d.closings.push(entry);
+  
+  save(d);
+  renderAll();
+  alert('Daily Closing saved successfully!');
 }
 
 function renderReports() {
-  let p = document.getElementById('reportPeriod')?.value || 'month', [start, end] = periodRange(p), d = db(), ss = salesInRange(start, end), revenue = sum(ss, s => s.total), gp = sum(ss, s => saleProfit(s)), exp = sum(d.expenses.filter(e => dateOnly(e.date) >= start && dateOnly(e.date) <= end), e => e.amount), salary = sum(d.salaryPayments.filter(e => dateOnly(e.date) >= start && dateOnly(e.date) <= end), e => e.amount), purchase = sum(d.purchases.filter(e => dateOnly(e.date) >= start && dateOnly(e.date) <= end), e => e.total), net = gp - exp - salary;
-  document.getElementById('reportCards').innerHTML = [['SALES', revenue], ['GROSS PROFIT', gp], ['EXPENSES', exp], ['SALARY', salary], ['PURCHASES', purchase], ['NET PROFIT', net]].map((x, i) => `<div class="card metric"><div><small>${x[0]}</small><h2 class="${i === 5 ? (net >= 0 ? 'green' : 'red') : ''}">${money(x[1])}</h2></div><div class="icon">${i === 5 ? '✓' : '₹'}</div></div>`).join('');
-  document.getElementById('reportBreakdown').innerHTML = [['Revenue', revenue], ['Cost of Goods Sold', -saleCostTotal(ss)], ['Gross Profit', gp], ['Operating Expenses', -exp], ['Salary', -salary], ['Net Profit', net], ['Profit Margin', revenue ? (net / revenue * 100).toFixed(1) + '%' : '0%']].map(x => `<div class="statline"><span>${x[0]}</span><b class="${typeof x[1] === 'number' && x[1] < 0 ? 'red' : typeof x[1] === 'number' && x[1] > 0 ? 'green' : ''}">${typeof x[1] === 'number' ? money(x[1]) : x[1]}</b></div>`).join('');
-  let stockVal = sum(d.products, p => p.stock * p.cost);
-  document.getElementById('businessHealth').innerHTML = [['Gross Margin', revenue ? (gp / revenue * 100).toFixed(1) + '%' : '0%'], ['Stock at Cost', money(stockVal)], ['Receivables', money(sum(d.sales, s => s.due))], ['Savings Reserve', money(sum(d.savings, x => x.amount))], ['Bills in Period', ss.length]].map(x => `<div class="statline"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');
-  let map = {};
-  ss.forEach(s => s.items.forEach(i => {
-    if (!map[i.productId]) map[i.productId] = { name: i.name, qty: 0, revenue: 0, profit: 0 };
-    map[i.productId].qty += i.qty;
-    map[i.productId].revenue += i.price * i.qty;
-    map[i.productId].profit += (i.price - i.cost) * i.qty;
-  }));
-  document.getElementById('productReport').innerHTML = Object.values(map).sort((a, b) => b.revenue - a.revenue).map(x => `<tr><td>${esc(x.name)}</td><td>${x.qty}</td><td class="num">${money(x.revenue)}</td><td class="num green">${money(x.profit)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">No sales in this period.</td></tr>';
+  let period = document.getElementById('reportPeriod')?.value || 'month';
+  let [start, end] = periodRange(period);
+  let d = db();
+  let sales = salesInRange(start, end);
+  let rev = sum(sales, s => s.total);
+  let gp = sum(sales, s => saleProfit(s));
+  let exp = sum(d.expenses.filter(e => dateOnly(e.date) >= start && dateOnly(e.date) <= end), e => e.amount);
+  let sal = sum(d.salaryPayments.filter(e => dateOnly(e.date) >= start && dateOnly(e.date) <= end), e => e.amount);
+  let net = gp - exp - sal;
+
+  document.getElementById('reportCards').innerHTML = [
+    ['REVENUE', money(rev), '▤', ''],
+    ['GROSS PROFIT', money(gp), '↗', 'green'],
+    ['EXPENSES + SALARIES', money(exp + sal), '−', 'red'],
+    ['NET PROFIT', money(net), '✓', net >= 0 ? 'green' : 'red']
+  ].map(c => `<div class="card metric"><div><small>${c[0]}</small><h2 class="${c[3]}">${c[1]}</h2></div><div class="icon">${c[2]}</div></div>`).join('');
+
+  document.getElementById('reportBreakdown').innerHTML = `
+    <div class="statline"><span>Gross Sales</span><b>${money(sum(sales, s => s.subtotal))}</b></div>
+    <div class="statline"><span>Discounts Given</span><b class="red">− ${money(sum(sales, s => s.discount))}</b></div>
+    <div class="statline"><span>Net Revenue</span><b>${money(rev)}</b></div>
+    <div class="statline"><span>Cost of Goods Sold (COGS)</span><b>${money(sum(sales, s => saleCost(s)))}</b></div>
+    <div class="statline"><span>Gross Profit</span><b class="green">${money(gp)}</b></div>
+    <div class="statline"><span>Operating Expenses</span><b class="red">${money(exp)}</b></div>
+    <div class="statline"><span>Salaries Paid</span><b class="red">${money(sal)}</b></div>
+    <div class="statline"><span>Net Profit / Loss</span><b class="${net >= 0 ? 'green' : 'red'}">${money(net)}</b></div>
+  `;
+
+  let margin = rev ? ((net / rev) * 100).toFixed(1) : '0';
+  document.getElementById('businessHealth').innerHTML = `
+    <div class="statline"><span>Profit Margin</span><b>${margin}%</b></div>
+    <div class="statline"><span>Invoices Issued</span><b>${sales.length}</b></div>
+    <div class="statline"><span>Avg Ticket Size</span><b>${sales.length ? money(rev / sales.length) : money(0)}</b></div>
+  `;
+
+  let productMap = {};
+  sales.forEach(s => {
+    s.items.forEach(i => {
+      if (!productMap[i.name]) productMap[i.name] = { qty: 0, rev: 0, profit: 0 };
+      productMap[i.name].qty += i.qty;
+      productMap[i.name].rev += i.price * i.qty;
+      productMap[i.name].profit += (i.price - i.cost) * i.qty;
+    });
+  });
+
+  document.getElementById('productReport').innerHTML = Object.entries(productMap).length ? Object.entries(productMap).map(([pName, pData]) => `
+    <tr><td><b>${esc(pName)}</b></td><td>${pData.qty}</td><td class="num">${money(pData.rev)}</td><td class="num green">${money(pData.profit)}</td></tr>
+  `).join('') : '<tr><td colspan="4" class="empty">No sales recorded for this period.</td></tr>';
 }
 
-function saleCostTotal(ss) { return sum(ss, s => saleCost(s)); }
-
-function openModal(title, body) {
-  document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalBody').innerHTML = body;
-  document.getElementById('modalBg').classList.add('show');
-}
-
-function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
-function isPhoneDevice() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); }
-
-function scanPOSBarcode() {
-  let q = document.getElementById('posSearch')?.value.trim();
-  if (!q) return;
-  let p = db().products.find(x => String(x.barcode) === String(q));
-  if (p) {
-    addCart(p.id);
-    let input = document.getElementById('posSearch');
-    if (input) input.value = '';
-    renderPOSProducts();
-  } else {
-    pendingPOSBarcode = q;
-    if (confirm('Product not found for barcode: ' + q + '\nDo you want to add a new product?')) {
-      showView('products');
-      prepareNewProductFromBarcode(q);
-    }
-  }
-}
-
-// Camera Scanner Implementation via ZXing
+// Camera Scanner Logic (ZXing)
 function openITCOCameraScanner(mode) {
   scanMode = mode;
-  const modal = document.getElementById('itcoScannerModal');
+  let modal = document.getElementById('itcoScannerModal');
+  let status = document.getElementById('itcoScanStatus');
   modal.classList.add('show');
-  const status = document.getElementById('itcoScanStatus');
-  status.textContent = 'Starting camera...';
+  status.textContent = 'Initializing Camera...';
 
   if (!codeReader) {
     codeReader = new ZXing.BrowserMultiFormatReader();
@@ -1161,15 +1208,39 @@ function openITCOCameraScanner(mode) {
 
   codeReader.decodeFromVideoDevice(undefined, 'itcoVideo', (result, err) => {
     if (result) {
-      status.textContent = 'Scanned: ' + result.text;
-      handleScannedBarcode(result.text);
+      let code = result.text;
+      status.textContent = 'Scanned: ' + code;
+      try { navigator.vibrate?.(100); } catch(e){}
+      
       closeITCOCameraScanner();
-    }
-    if (err && !(err instanceof ZXing.NotFoundException)) {
-      status.textContent = 'Error: ' + err;
+      
+      if (scanMode === 'pos') {
+        let p = db().products.find(x => String(x.barcode) === String(code));
+        if (p) {
+          addCart(p.id);
+        } else {
+          pendingPOSBarcode = code;
+          if (confirm('Barcode ' + code + ' is not registered. Do you want to add this new product now?')) {
+            showView('products');
+            prepareNewProductFromBarcode(code);
+          }
+        }
+      } else if (scanMode === 'home') {
+        document.getElementById('homeBarcode').value = code;
+        addHomeByBarcode();
+      } else if (scanMode === 'product') {
+        document.getElementById('pBarcode').value = code;
+        lookupProductBarcode('product');
+      } else if (scanMode === 'purchase') {
+        document.getElementById('buyBarcode').value = code;
+        lookupProductBarcode('purchase');
+      } else if (scanMode === 'test') {
+        document.getElementById('scannerTest').value = code;
+        alert('Test Scan Successful! Code: ' + code);
+      }
     }
   }).catch(err => {
-    status.textContent = 'Camera error: ' + err;
+    status.textContent = 'Camera error or permission denied.';
   });
 }
 
@@ -1180,34 +1251,23 @@ function closeITCOCameraScanner() {
   document.getElementById('itcoScannerModal').classList.remove('show');
 }
 
-function handleScannedBarcode(barcode) {
-  if (scanMode === 'pos') {
-    document.getElementById('posSearch').value = barcode;
-    scanPOSBarcode();
-  } else if (scanMode === 'product') {
-    document.getElementById('pBarcode').value = barcode;
-    lookupProductBarcode('product');
-  } else if (scanMode === 'purchase') {
-    document.getElementById('buyBarcode').value = barcode;
-    lookupProductBarcode('purchase');
-  } else if (scanMode === 'home') {
-    document.getElementById('homeBarcode').value = barcode;
-    addHomeByBarcode();
-  } else if (scanMode === 'test') {
-    document.getElementById('scannerTest').value = barcode;
-    testScanner();
-  }
-}
-
 function testScanner() {
   let val = document.getElementById('scannerTest').value;
-  document.getElementById('scannerStatus').innerHTML = '<div class="alert">Scanned Value: <b>' + esc(val) + '</b></div>';
+  if (!val) return alert('Please scan something in the input box first.');
+  alert('Scanner is working! Scanned value: ' + val);
 }
 
-function testPrint() { window.print(); }
+function testPrint() {
+  let sampleSale = {
+    invoice: 'INV-TEST-001', date: now(), customerName: 'Test Customer',
+    items: [{ name: 'Sample Item 1', qty: 2, price: 150 }, { name: 'Sample Item 2', qty: 1, price: 500 }],
+    subtotal: 800, discount: 50, total: 750
+  };
+  printInvoice(sampleSale);
+}
 
 function backupData() {
-  let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(localStorage.getItem(KEY));
+  let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db()));
   let downloadAnchor = document.createElement('a');
   downloadAnchor.setAttribute("href", dataStr);
   downloadAnchor.setAttribute("download", `ITCO_Backup_${today()}.json`);
@@ -1219,32 +1279,40 @@ function backupData() {
 function restoreData() {
   let input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'application/json';
   input.onchange = e => {
     let file = e.target.files[0];
     let reader = new FileReader();
     reader.readAsText(file, 'UTF-8');
     reader.onload = readerEvent => {
-      let content = readerEvent.target.result;
       try {
-        let parsed = JSON.parse(content);
-        save(parsed);
+        let content = JSON.parse(readerEvent.target.result);
+        save(content);
         renderAll();
         alert('Database restored successfully!');
-      } catch(err) {
-        alert('Invalid JSON file.');
+      } catch (err) {
+        alert('Invalid backup file.');
       }
-    }
-  }
+    };
+  };
   input.click();
 }
 
 function clearData() {
-  if (confirm('Are you sure you want to reset all data? This cannot be undone!')) {
+  if (confirm('Are you sure you want to RESET the entire database? This action CANNOT be undone!')) {
     localStorage.removeItem(KEY);
     init();
-    alert('Database cleared.');
+    alert('Database has been reset.');
   }
+}
+
+function openModal(title, contentHtml) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = contentHtml;
+  document.getElementById('modalBg').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('show');
 }
 
 window.onload = init;
