@@ -106,7 +106,7 @@ input:focus,select:focus,textarea:focus{border-color:#1769e0!important;box-shado
 <div class="top">
   <div><h1 id="pageTitle">Business Dashboard</h1><p id="todayText"></p></div>
   <div class="top-actions no-print">
-    <span id="itco-cloud-status">☁ Syncing...</span>
+    <span id="itco-cloud-status">☁ Checking cloud...</span>
     <button class="btn btn-light" onclick="showView('closing')">Daily Closing</button>
     <button class="btn btn-primary" onclick="showView('pos')">+ New Sale</button>
   </div>
@@ -391,7 +391,7 @@ async function syncFromCloud(options = {}) {
     try {
       response = await fetch(SUPABASE_URL + '/rest/v1/app_state?id=eq.' + encodeURIComponent(CLOUD_ROW_ID) + '&select=id,data,updated_at', {
         method: 'GET',
-        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Accept': 'application/json' },
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Accept': 'application/json' },
         signal: controller.signal,
         cache: 'no-store'
       });
@@ -429,7 +429,6 @@ async function uploadToCloud(data, immediate = false) {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_ANON_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates,return=minimal'
           },
@@ -542,22 +541,41 @@ function renderAll() {
 }
 
 function init() {
-  let d = db();
-  if (!d.homeUses) d.homeUses = [];
-  if (!d.khataEntries) d.khataEntries = [];
-  if (!d.distributorEntries) d.distributorEntries = [];
-  if (!d.distributors) d.distributors = [];
-  if (!d.cashOpenings) d.cashOpenings = {};
-  if (!d.expenseCategories) d.expenseCategories = ['Rent', 'Electricity', 'Transport', 'Maintenance', 'Food / Tea', 'Home', 'Miscellaneous'];
-  // Initialization must not upload/overwrite the cloud before the first cloud read.
-  localStorage.setItem(KEY, JSON.stringify(d));
-  document.getElementById('todayText').textContent = new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  document.getElementById('closeDate').value = today();
-  renderAll();
-  if (!editingInvoiceId) {
-    document.getElementById('invoiceNo').textContent = 'INV-' + today().replaceAll('-', '') + '-' + String(db().sales.length + 1).padStart(3, '0');
+  // Start cloud check immediately so a UI rendering error can never leave
+  // the status stuck on the initial "Checking cloud..." text.
+  setCloudStatus('☁ Connecting...');
+  Promise.resolve()
+    .then(() => syncFromCloud())
+    .then(ok => { if (ok) startCloudRealtime(); })
+    .catch(err => {
+      console.error('ITCO initial cloud sync failed:', err);
+      setCloudStatus('☁ Sync failed — retry');
+    });
+
+  try {
+    let d = db();
+    if (!d.homeUses) d.homeUses = [];
+    if (!d.khataEntries) d.khataEntries = [];
+    if (!d.distributorEntries) d.distributorEntries = [];
+    if (!d.distributors) d.distributors = [];
+    if (!d.cashOpenings) d.cashOpenings = {};
+    if (!d.expenseCategories) d.expenseCategories = ['Rent', 'Electricity', 'Transport', 'Maintenance', 'Food / Tea', 'Home', 'Miscellaneous'];
+    localStorage.setItem(KEY, JSON.stringify(d));
+
+    const todayTextEl = document.getElementById('todayText');
+    if (todayTextEl) todayTextEl.textContent = new Date().toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const closeDateEl = document.getElementById('closeDate');
+    if (closeDateEl) closeDateEl.value = today();
+
+    renderAll();
+    if (!editingInvoiceId) {
+      const invoiceEl = document.getElementById('invoiceNo');
+      if (invoiceEl) invoiceEl.textContent = 'INV-' + today().replaceAll('-', '') + '-' + String(db().sales.length + 1).padStart(3, '0');
+    }
+  } catch (err) {
+    console.error('ITCO UI initialization error:', err);
+    setTimeout(() => { try { renderAll(); } catch (e) { console.error('ITCO UI retry failed:', e); } }, 0);
   }
-  syncFromCloud().then(() => startCloudRealtime());
 }
 
 function sum(a, fn) { return a.reduce((t, x) => t + Number(fn(x) || 0), 0); }
