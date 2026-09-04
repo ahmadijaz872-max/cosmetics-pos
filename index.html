@@ -371,10 +371,34 @@ function setCloudStatus(text) {
   if (el) el.textContent = text;
 }
 
+function normalizeCloudData(data) {
+  const local = (() => {
+    try { return db(); } catch (_) { return {}; }
+  })();
+  const d = Object.assign({}, local, (data && typeof data === 'object') ? data : {});
+  const arrayKeys = [
+    'products','sales','purchases','customers','expenses','employees',
+    'salaryPayments','savings','closings','homeUses','khataEntries',
+    'distributorEntries','distributors'
+  ];
+  arrayKeys.forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+  if (!d.cashOpenings || typeof d.cashOpenings !== 'object' || Array.isArray(d.cashOpenings)) d.cashOpenings = {};
+  if (!Array.isArray(d.expenseCategories) || !d.expenseCategories.length) {
+    d.expenseCategories = ['Rent','Electricity','Transport','Maintenance','Food / Tea','Home','Miscellaneous'];
+  }
+  if (d.cashOpening === undefined || d.cashOpening === null || Number.isNaN(Number(d.cashOpening))) d.cashOpening = 0;
+  return d;
+}
+
 function applyCloudData(data) {
   if (!data || typeof data !== 'object') return;
-  localStorage.setItem(KEY, JSON.stringify(data));
-  renderAll();
+  const safeData = normalizeCloudData(data);
+  localStorage.setItem(KEY, JSON.stringify(safeData));
+  try { renderAll(); } catch (e) {
+    console.error('ITCO cloud data render error:', e);
+    setCloudStatus('☁ Connected — local UI error');
+    return;
+  }
   setCloudStatus('☁ Connected');
 }
 
