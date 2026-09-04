@@ -385,29 +385,33 @@ async function syncFromCloud(options = {}) {
   }
   try {
     if (!options.silent) setCloudStatus('☁ Syncing...');
-    const { data: row, error } = await supabaseClient
-      .from('app_state')
-      .select('id,data,updated_at')
-      .eq('id', CLOUD_ROW_ID)
-      .maybeSingle();
-
-    if (error) throw error;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    let response;
+    try {
+      response = await fetch(SUPABASE_URL + '/rest/v1/app_state?id=eq.' + encodeURIComponent(CLOUD_ROW_ID) + '&select=id,data,updated_at', {
+        method: 'GET',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Accept': 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+    } finally { clearTimeout(timer); }
+    if (!response.ok) throw new Error('Cloud HTTP ' + response.status + ': ' + (await response.text()).slice(0,180));
+    const rows = await response.json();
+    const row = rows && rows.length ? rows[0] : null;
 
     if (row && row.data && typeof row.data === 'object') {
-      // Don't replace a very recent local edit with an older poll response.
       const cloudMs = row.updated_at ? Date.parse(row.updated_at) : 0;
-      if (!cloudMs || cloudMs >= lastLocalSaveAt - 1500 || options.force) {
-        applyCloudData(row.data);
-      }
+      if (!cloudMs || cloudMs >= lastLocalSaveAt - 1500 || options.force) applyCloudData(row.data);
+      else setCloudStatus('☁ Connected');
       return true;
     }
 
-    // First device / empty cloud: seed the cloud with the current local data.
     await uploadToCloud(db(), true);
     return true;
   } catch (err) {
     console.error('ITCO cloud sync error:', err);
-    setCloudStatus('☁ Offline — local data safe');
+    setCloudStatus('☁ Sync failed — ' + (err.name === 'AbortError' ? 'timeout' : String(err.message || err).slice(0,45)));
     return false;
   }
 }
@@ -417,19 +421,31 @@ async function uploadToCloud(data, immediate = false) {
   const doSave = async () => {
     try {
       setCloudStatus('☁ Saving...');
-      const { error } = await supabaseClient
-        .from('app_state')
-        .upsert({ id: CLOUD_ROW_ID, data, updated_at: now() }, { onConflict: 'id' });
-      if (error) throw error;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      let response;
+      try {
+        response = await fetch(SUPABASE_URL + '/rest/v1/app_state', {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates,return=minimal'
+          },
+          body: JSON.stringify({ id: CLOUD_ROW_ID, data, updated_at: now() }),
+          signal: controller.signal
+        });
+      } finally { clearTimeout(timer); }
+      if (!response.ok) throw new Error('Cloud HTTP ' + response.status + ': ' + (await response.text()).slice(0,180));
       setCloudStatus('☁ Saved');
       return true;
     } catch (err) {
       console.error('ITCO cloud save error:', err);
-      setCloudStatus('☁ Save failed — local data safe');
+      setCloudStatus('☁ Save failed — ' + (err.name === 'AbortError' ? 'timeout' : String(err.message || err).slice(0,45)));
       return false;
     }
   };
-
   clearTimeout(syncTimeout);
   if (immediate) return doSave();
   syncTimeout = setTimeout(doSave, 500);
